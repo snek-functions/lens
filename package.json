@@ -1,6 +1,5 @@
 {
-  "name": "my-snek-function",
-  "baseURL": "https://schettn-special-umbrella-q66979jv7gh4w59-3000.preview.app.github.dev",
+  "name": "@snek-at/lens",
   "version": "0.0.1",
   "type": "module",
   "description": "Generated with `sf new`",
