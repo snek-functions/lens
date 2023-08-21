@@ -28,9 +28,16 @@
   "dependencies": {
     "@snek-at/function": "*",
     "@snek-at/function-cli": "*",
-    "@snek-at/function-server": "*"
+    "@snek-at/function-server": "*",
+    "@types/http-proxy": "^1.17.11",
+    "dotenv": "^16.3.1",
+    "http-proxy-middleware": "^2.0.6",
+    "ip": "^1.1.8",
+    "net": "^1.0.2"
   },
   "devDependencies": {
+    "@types/dotenv": "^8.2.0",
+    "@types/ip": "^1.1.0",
     "commitizen": "^4.2.5",
     "git-cz": "^4.9.0",
     "snek-query": "^0.0.53"

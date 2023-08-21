@@ -1,7 +1,7 @@
 FROM --platform=linux/amd64 node:18.8.0-alpine
 
 LABEL description="This container serves as an entry point for our future Snek Function projects."
-LABEL org.opencontainers.image.source="https://github.com/snek-functions/template"
+LABEL org.opencontainers.image.source="https://github.com/snek-functions/lens"
 LABEL maintainer="opensource@snek.at"
 
 WORKDIR /app

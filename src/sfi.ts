@@ -1,21 +1,32 @@
-import { defineService, logger } from "@snek-at/function";
-import { UserService } from "./services/user.service";
+import { defineService } from "@snek-at/function";
+import dotenv from "dotenv";
+
+import { lensProxyMiddleware } from "./middlewares/lens-proxy-middleware";
+import { Lens } from "./services/lens.service";
+
+dotenv.config();
+
+export const lensService = new Lens();
 
 export default defineService(
   {
     Query: {
-      allUser: UserService.allUser,
-      user: UserService.user,
+      allService: lensService.getServices,
     },
     Mutation: {
-      userCreate: UserService.userCreate,
-      userUpdate: UserService.userUpdate,
-      userDelete: UserService.userDelete,
+      serviceLableUpdate: lensService.updateServiceLabel,
     },
   },
   {
     configureApp(app) {
-      logger.info("Configuring app");
+      if (!lensService.isAutoDiscoveryRunning) {
+        lensService.stopAutoDiscovery();
+      }
+
+      lensService.startAutoDiscovery();
+
+      app.use("/", lensProxyMiddleware);
+
       return app;
     },
   }
