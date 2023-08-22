@@ -10,7 +10,6 @@ COPY .sf/ ./.sf
 COPY package.json .
 
 RUN yarn install --production
-RUN yarn sf build
 
 CMD ["sh", "-c", "yarn sf-server"]
 

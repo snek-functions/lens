@@ -1,6 +1,9 @@
 import { logger } from "@snek-at/function";
 import { NextFunction, Request, Response } from "express";
-import { createProxyMiddleware } from "http-proxy-middleware";
+import {
+  createProxyMiddleware,
+  responseInterceptor,
+} from "http-proxy-middleware";
 import { lensService } from "../sfi";
 
 export const lensProxyMiddleware = async (
@@ -41,8 +44,18 @@ export const lensProxyMiddleware = async (
 
     return createProxyMiddleware({
       target,
+      xfwd: true,
       secure: false,
-      autoRewrite: true,
+      changeOrigin: true,
+      // autoRewrite: false,
+      selfHandleResponse: true,
+      onProxyRes: responseInterceptor(async (buffer, proxyRes, req, res) => {
+        // Remove X-Frame-Options header from response
+        res.removeHeader("X-Frame-Options");
+        res.setHeader("X-Lens", "true");
+
+        return buffer;
+      }),
     })(req, res, next);
   } catch (error) {
     logger.error(`Error processing request: ${error.message}`);

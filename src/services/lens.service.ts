@@ -40,6 +40,8 @@ export class Lens {
   async updateServiceLabel(id: string, label: string) {
     const newServices = await updateServiceLabel(id, label);
 
+    this.services = newServices;
+
     return newServices;
   }
 
