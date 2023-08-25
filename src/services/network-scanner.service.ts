@@ -1,18 +1,21 @@
 import { logger } from "@snek-at/function";
 import ip from "ip";
-import * as net from "net";
+
+import {
+  connect as connectInsecure,
+  createServer as createInsecureServer,
+} from "net";
+import { connect as connectSecure } from "tls";
 
 type NetworkScannerDiscovery = Array<{
   host: string;
-  ports: number[];
+  ports: Array<{ port: number; isSecure: boolean }>;
 }>;
 
 export class NetworkScanner {
   private networks: string[];
   private portList: number[];
-  private results: Record<string, number[]>;
-
-  private autoDiscoveryInterval: NodeJS.Timeout | null = null;
+  private results: Record<string, Array<{ port: number; isSecure: boolean }>>;
 
   constructor(networks: string[], portList: number[]) {
     this.networks = networks;
@@ -24,15 +27,11 @@ export class NetworkScanner {
     );
   }
 
-  get discovery(): NetworkScannerDiscovery {
+  private get discovery(): NetworkScannerDiscovery {
     return Object.entries(this.results).map(([host, ports]) => ({
       host,
       ports,
     }));
-  }
-
-  get isAutoDiscoveryRunning(): boolean {
-    return this.autoDiscoveryInterval !== null;
   }
 
   async scanNetworks() {
@@ -56,7 +55,7 @@ export class NetworkScanner {
 
     await Promise.all(promises);
 
-    // Remove hosts without open ports for each network
+    // Remove hosts without open ports for isSecure
     this.networks.forEach((network) => {
       Object.entries(this.results).forEach(([host, ports]) => {
         if (ports.length === 0) {
@@ -65,64 +64,50 @@ export class NetworkScanner {
       });
     });
 
-    console.log(this.results);
-  }
-
-  async startAutoDiscovery(cb: (discovery: NetworkScannerDiscovery) => void) {
-    logger.info("Discover networks on startup");
-    await this.scanNetworks();
-
-    cb(this.discovery);
-
-    logger.info("Discovery networks every 5 minutes");
-    this.autoDiscoveryInterval = setInterval(async () => {
-      logger.info("Starting network scan");
-      await this.scanNetworks();
-      logger.info("Network scan completed");
-
-      cb(this.discovery);
-    }, 5 * 60 * 1000); // Run every 5 minutes
-  }
-
-  stopAutoDiscovery() {
-    if (this.autoDiscoveryInterval !== null) {
-      clearInterval(this.autoDiscoveryInterval);
-      this.autoDiscoveryInterval = null;
-    }
-  }
-
-  // Destructor (optional, depending on your use case)
-  // This will be automatically called when the object is garbage collected
-  // Make sure you're using the appropriate destructor syntax based on your environment (e.g., Node.js or browser)
-  // For Node.js, you can use "destroy" event on the "this" object, or override the "destroy" method
-  destroy() {
-    console.log("Destroying network scanner");
-    this.stopAutoDiscovery();
+    return this.discovery;
   }
 
   private async checkPort(host: string, port: number): Promise<void> {
-    return new Promise<void>((resolve) => {
-      const socket = new net.Socket();
+    const connect = (isSecure: boolean) => {
+      return new Promise<boolean>((resolve) => {
+        const socket = isSecure
+          ? connectSecure({
+              host,
+              port,
+              rejectUnauthorized: false,
+            })
+          : connectInsecure({
+              host,
+              port,
+            });
 
-      socket.setTimeout(1000); // Adjust timeout as needed
+        socket.setTimeout(1000);
 
-      socket.on("connect", () => {
-        this.results[host].push(port); // Store open port in results
-        socket.end();
-        resolve();
+        socket.on(isSecure ? "secureConnect" : "connect", () => {
+          this.results[host].push({ port, isSecure });
+
+          socket.destroy();
+          resolve(true);
+        });
+
+        socket.on("timeout", () => {
+          socket.destroy();
+          resolve(false);
+        });
+
+        socket.on("error", (msg) => {
+          socket.destroy();
+          resolve(false);
+        });
       });
+    };
 
-      socket.on("timeout", () => {
-        socket.destroy();
-        resolve();
-      });
+    const isSecureConnection = await connect(true);
 
-      socket.on("error", () => {
-        socket.destroy();
-        resolve();
-      });
+    if (!isSecureConnection) {
+      await connect(false);
+    }
 
-      socket.connect(port, host);
-    });
+    return Promise.resolve();
   }
 }

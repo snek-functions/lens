@@ -10,6 +10,7 @@ export type LensService = {
   fqdn: string;
   host: string;
   port: number;
+  isSecure: boolean;
 };
 
 export const writeServices = async (services: LensService[]) => {

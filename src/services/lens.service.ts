@@ -11,7 +11,7 @@ export class Lens {
 
   networkScanner: NetworkScanner;
   name: string;
-  services: LensService[] | undefined = undefined;
+  services: LensService[] = [];
 
   constructor() {
     this.name = process.env.LENS_NAME ?? "application";
@@ -24,12 +24,7 @@ export class Lens {
     this.updateServiceLabel = this.updateServiceLabel.bind(this);
   }
 
-  get isAutoDiscoveryRunning() {
-    return this.networkScanner.isAutoDiscoveryRunning;
-  }
-
   async getServices() {
-    console.log("this.services", this);
     if (!this.services) {
       this.services = await readServices();
     }
@@ -45,34 +40,64 @@ export class Lens {
     return newServices;
   }
 
-  startAutoDiscovery() {
-    this.networkScanner.startAutoDiscovery(async (discovery) => {
-      console.log("Doing auto discovery");
+  autoDiscoveryInterval: NodeJS.Timeout | undefined = undefined;
+
+  async start(cb: (services: LensService[]) => void) {
+    const buildServiceList = async () => {
       const serviceList: LensService[] = [];
+
+      const discovery = await this.networkScanner.scanNetworks();
 
       discovery.forEach(({ host, ports }) => {
         for (let i = 0; i < ports.length; i++) {
-          const id = Buffer.from(`${host}:${ports[i]}`).toString("hex");
+          const id = Buffer.from(`${host}:${ports[i].port}`).toString("hex");
           const fqdn = `${id}.${this.name}.${this.LENS_BASE_DOMAIN}`;
 
           serviceList.push({
             id,
             fqdn,
             host,
-            port: ports[i],
+            port: ports[i].port,
+            isSecure: ports[i].isSecure,
           });
         }
       });
 
       this.services = await writeServices(serviceList);
-    });
+
+      return serviceList;
+    };
+
+    await buildServiceList();
+
+    cb(this.services);
+
+    if (this.autoDiscoveryInterval) {
+      clearInterval(this.autoDiscoveryInterval);
+
+      this.autoDiscoveryInterval = undefined;
+    }
+
+    this.autoDiscoveryInterval = setInterval(
+      async () => {
+        const services = await buildServiceList();
+
+        cb(this.services);
+      },
+      // 5 minutes
+      5 * 60 * 1000
+    );
   }
 
-  stopAutoDiscovery() {
-    this.networkScanner.stopAutoDiscovery();
+  stop() {
+    if (this.autoDiscoveryInterval) {
+      clearInterval(this.autoDiscoveryInterval);
+
+      this.autoDiscoveryInterval = undefined;
+    }
   }
 
   destroy() {
-    this.stopAutoDiscovery();
+    this.stop();
   }
 }

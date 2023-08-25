@@ -30,7 +30,7 @@
     "@snek-at/function-server": "*",
     "@types/http-proxy": "^1.17.11",
     "dotenv": "^16.3.1",
-    "http-proxy-middleware": "^2.0.6",
+    "http-proxy": "^1.18.1",
     "ip": "^1.1.8",
     "net": "^1.0.2"
   },
