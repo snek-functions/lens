@@ -52,7 +52,7 @@ export default defineService(
       allService: lensService.getServices,
     },
     Mutation: {
-      serviceLableUpdate: lensService.updateServiceLabel,
+      serviceMetaUpdate: lensService.updateServiceMeta,
     },
   },
   {

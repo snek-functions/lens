@@ -1,8 +1,8 @@
 import {
   LensService,
   readServices,
-  updateServiceLabel,
   writeServices,
+  updateServiceMeta,
 } from "../repositories/lens.repository";
 import { NetworkScanner } from "./network-scanner.service";
 
@@ -21,7 +21,7 @@ export class Lens {
     this.networkScanner = new NetworkScanner(LENS_NETWORKS, LENS_PORTS);
 
     this.getServices = this.getServices.bind(this);
-    this.updateServiceLabel = this.updateServiceLabel.bind(this);
+    this.updateServiceMeta = this.updateServiceMeta.bind(this);
   }
 
   async getServices() {
@@ -32,8 +32,8 @@ export class Lens {
     return this.services;
   }
 
-  async updateServiceLabel(id: string, label: string) {
-    const newServices = await updateServiceLabel(id, label);
+  async updateServiceMeta(id: string, meta: LensService["meta"]) {
+    const newServices = await updateServiceMeta(id, meta);
 
     this.services = newServices;
 

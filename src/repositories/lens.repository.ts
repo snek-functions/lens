@@ -6,7 +6,10 @@ const servicesFilePath = "services.json";
 // Repository for Lens services (persisted on disk)
 export type LensService = {
   id: string;
-  label?: string;
+  meta?: {
+    label?: string;
+    icon?: string;
+  };
   fqdn: string;
   host: string;
   port: number;
@@ -27,7 +30,10 @@ export const writeServices = async (services: LensService[]) => {
 
       return {
         ...existingService,
-        label: service.label || existingService.label,
+        meta: {
+          ...existingService.meta,
+          ...service.meta,
+        },
       };
     });
 
@@ -50,11 +56,22 @@ export const readServices = async (): Promise<LensService[]> => {
   }
 };
 
-export const updateServiceLabel = async (id: string, label: string) => {
+export const updateServiceMeta = async (
+  id: string,
+  meta: LensService["meta"]
+) => {
   try {
     const services = await readServices();
     const updatedServices = services.map((service) =>
-      service.id === id ? { ...service, label } : service
+      service.id === id
+        ? {
+            ...service,
+            meta: {
+              ...service.meta,
+              ...meta,
+            },
+          }
+        : service
     );
     await writeServices(updatedServices);
 
