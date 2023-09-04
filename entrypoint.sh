@@ -13,12 +13,12 @@ else
   exec $RUNTIME_ENTRYPOINT
 fi
 
-until [ -d "/.ssh/..data" ]
-do
-    sleep 1
-done
+sleep 3
 
-cp -f /.ssh/..data/* .ssh/
+echo ${LAMBDA_TASK_ROOT}/.ssh/
+
+cp -f /.ssh/..data/* ${LAMBDA_TASK_ROOT}/.ssh/
+chmod 600 -Rv ${LAMBDA_TASK_ROOT}/.ssh/
 
 # SPDX-License-Identifier: (EUPL-1.2)
 # Copyright © 2019-2022 snek.at
