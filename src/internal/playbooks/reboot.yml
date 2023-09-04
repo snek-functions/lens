@@ -1,0 +1,10 @@
+---
+- hosts: all
+  become: true
+  vars_files:
+    - ../vault.yml
+
+  tasks:
+    - name: Unconditionally reboot the machine with all defaults
+      ansible.builtin.reboot:
+

@@ -1,0 +1,50 @@
+---
+- hosts: all
+  vars_files:
+    - ../vault.yml
+
+  pre_tasks:
+    # - name: Add valid DNS server
+    #   become: true
+    #   lineinfile:
+    #     dest: /etc/resolv.conf
+    #     regexp: "^nameserver"
+    #     line: "nameserver 1.1.1.1"
+    #     state: present
+    # - name: Add basic configuration
+    #   become: true
+    #   shell: |
+    #     set -ex
+    #     echo 'pi.local' > /etc/hostname
+    #     localectl set-locale LANG=en_US.UTF-8
+    #     ln -sfn /usr/share/zoneinfo/UTC /etc/localtime
+    # - name: Install epel (Extra Packages for Enterprise Linux)
+    #   become: true
+    #   shell: |
+    #     set -ex
+    #     apt-get update
+    #     apt-get dist-upgrade -y
+
+  tasks:
+    - name: Set authorized keys for ansible controller
+      become: true
+      authorized_key:
+        user: "{{ item }}"
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_ssh_ed25519_' + item + '_' + inventory_hostname + '.pub') }}"
+      with_items: "{{ users }}"
+    - name: Disable ssh password login
+      become: true
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: "^PasswordAuthentication"
+        line: "PasswordAuthentication no"
+        state: present
+    
+
+  post_tasks:
+    - name: Restart sshd
+      become: true
+      systemd:
+        name: sshd
+        state: restarted

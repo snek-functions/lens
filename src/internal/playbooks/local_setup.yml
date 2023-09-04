@@ -1,0 +1,6 @@
+---
+- name: Create ssh keys
+  import_playbook: create_user_ssh_keys.yml
+
+- name: Prepare local host
+  import_playbook: prepare_local.yml

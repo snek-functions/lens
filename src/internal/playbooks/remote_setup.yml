@@ -1,0 +1,3 @@
+---
+- name: Prepare remote host
+  import_playbook: prepare_remote.yml

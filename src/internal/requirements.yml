@@ -1,0 +1,4 @@
+---
+collection:
+  # Install a collection from Ansible Galaxy.
+  - name: community.docker
