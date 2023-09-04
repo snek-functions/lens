@@ -6,7 +6,7 @@ LABEL description="This container serves as an entry point for our future Snek F
 LABEL org.opencontainers.image.source="https://github.com/snek-functions/lens"
 LABEL maintainer="opensource@snek.at"
 
-ARG DEFAULT_PASSPHRASE = "changeme"
+ARG DEFAULT_PASSPHRASE="changeme"
 
 ENV LAMBDA_TASK_ROOT=/var/task \
     SNEK_FUNCTIONS_BUILD_DIR=/tmp/snek-functions \
