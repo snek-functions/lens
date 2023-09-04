@@ -53,6 +53,7 @@ RUN set -ex \
     && find src -mindepth 1 -maxdepth 1 -not -name internal -exec rm -rf {} + \
     && mv .sf src node_modules venv ${LAMBDA_TASK_ROOT} \
     && rm -r ${SNEK_FUNCTIONS_BUILD_DIR}/* \
+    && mkdir -p ${LAMBDA_TASK_ROOT}/.ssh \
     && mkdir -p ${LAMBDA_TASK_ROOT}/ansible \
     && touch ${LAMBDA_TASK_ROOT}/ansible/.ansible.cfg \
     && ln -s ${LAMBDA_TASK_ROOT}/.ansible.cfg ${LAMBDA_TASK_ROOT}/ansible/.ansible.cfg \
