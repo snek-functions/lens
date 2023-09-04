@@ -50,13 +50,12 @@ RUN set -ex \
     && ln -s $(which python3) venv/bin/python \
     && venv/bin/python -m pip install -U pip \
     && venv/bin/python -m pip install -r requirements.txt \
-    && venv/bin/python setup_duckdb.py \
     && find src -mindepth 1 -maxdepth 1 -not -name internal -exec rm -rf {} + \
     && mv .sf src node_modules venv ${LAMBDA_TASK_ROOT} \
     && rm -r ${SNEK_FUNCTIONS_BUILD_DIR}/* \
-    && mkdir -p ${LAMBDA_TASK_ROOT}/objects \
-    && mkdir -p ${LAMBDA_TASK_ROOT}/secrets \
-    && mkdir -p ${LAMBDA_TASK_ROOT}/authentication \
+    && mkdir -p ${LAMBDA_TASK_ROOT}/.ssh \
+    && mkdir -p ${LAMBDA_TASK_ROOT}/ansible \
+    && mkdir -p /private \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists
 
@@ -72,10 +71,6 @@ RUN set -ex \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${LAMBDA_TASK_ROOT}
-
-RUN mkdir .ssh \
-    mkdir .ansible \
-    mkdir /private
 
 EXPOSE 3000
 
