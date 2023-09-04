@@ -1,5 +1,8 @@
 #!/bin/sh
 
+cp -f /.ssh/..data/* ${LAMBDA_TASK_ROOT}/.ssh/
+chmod 600 -Rv ${LAMBDA_TASK_ROOT}/.ssh/
+
 if [ $# -ne 1 ]; then
   echo "Start in continuous mode" 1>&2
   exec yarn sf-server --https --key /private/tls.key --cert /private/tls.crt --passphrase $PASSPHRASE
@@ -12,13 +15,6 @@ if [ -z "${AWS_LAMBDA_RUNTIME_API}" ]; then
 else
   exec $RUNTIME_ENTRYPOINT
 fi
-
-sleep 3
-
-echo ${LAMBDA_TASK_ROOT}/.ssh/
-
-cp -f /.ssh/..data/* ${LAMBDA_TASK_ROOT}/.ssh/
-chmod 600 -Rv ${LAMBDA_TASK_ROOT}/.ssh/
 
 # SPDX-License-Identifier: (EUPL-1.2)
 # Copyright © 2019-2022 snek.at
