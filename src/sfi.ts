@@ -2,6 +2,7 @@ import { defineService, logger } from "@snek-at/function";
 import dotenv from "dotenv";
 import httpProxy from "http-proxy";
 
+import { Samba } from "./controller/samba"
 import { Lens } from "./services/lens.service";
 import { LensService } from "./repositories/lens.repository";
 
@@ -53,6 +54,7 @@ export default defineService(
     },
     Mutation: {
       serviceMetaUpdate: lensService.updateServiceMeta,
+      sambaPasswordUpdate: Samba.updatePw,
     },
   },
   {
