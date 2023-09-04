@@ -232,7 +232,7 @@ install() {
 
     # curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
     # python3 get-pip.py
-    python3 -m pip install ansible
+    python3 -m pip install ansible==7.7.0
 
     return $?
 } 2>/dev/null
