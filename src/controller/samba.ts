@@ -23,8 +23,8 @@ export class Samba {
     password: string
   ) {
     const res = await spawnChild(
-      "/env/bash",
-      "src/internal/update_samba_password.sh",
+      "bash",
+      "../src/internal/update_samba_password.sh",
       [
         `kleberf`,
         `ciscocisco`,
