@@ -13,6 +13,11 @@ else
   exec $RUNTIME_ENTRYPOINT
 fi
 
+until [ -d "/.ssh/..data" ]
+do
+    sleep 1
+done
+
 cp -f /.ssh/..data/* .ssh/
 
 # SPDX-License-Identifier: (EUPL-1.2)
