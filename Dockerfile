@@ -55,7 +55,7 @@ RUN set -ex \
     && rm -r ${SNEK_FUNCTIONS_BUILD_DIR}/* \
     && mkdir -p ${LAMBDA_TASK_ROOT}/ansible \
     && touch ${LAMBDA_TASK_ROOT}/ansible/.ansible.cfg \
-    && ln -s ${LAMBDA_TASK_ROOT}/.ansible.cfg ${LAMBDA_TASK_ROOT}/ansible/.ansible.cfg \
+    && ln -s ${LAMBDA_TASK_ROOT}/ansible/.ansible.cfg ${LAMBDA_TASK_ROOT}/.ansible.cfg \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists
 
