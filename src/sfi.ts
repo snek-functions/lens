@@ -1,10 +1,17 @@
-import { defineService, logger } from "@snek-at/function";
+import {
+  ServiceError,
+  defineService,
+  logger,
+  withContext,
+} from "@snek-at/function";
 import dotenv from "dotenv";
 import httpProxy from "http-proxy";
 
 import { Lens, LensService } from "./services/lens.service";
-import { Coder } from "./controller/coder"
-import { Samba } from "./controller/samba"
+import { Coder } from "./controller/coder";
+import { Samba } from "./controller/samba";
+import { requireAdminOnLens, requireAuthOnLens } from "./decorators";
+import { sq } from "./clients/origin/src/index";
 
 dotenv.config();
 
@@ -55,12 +62,50 @@ export default defineService(
     Mutation: {
       //sambaPasswordUpdate: Samba.updatePassword,
       //coderPasswordUpdate: Coder.updatePassword,
-      updateInternalPassword: async (username: string, password: string): Promise<{ message }> => {
-        const coderRes = await Coder.updatePassword(username, password);
-        const sambaRes = await Samba.updatePassword(username, password);
-        return coderRes;
-      }
-      serviceUpdate: lensService.updateService,
+
+      updateInternalPassword: withContext(
+        (context) => async (password: string) => {
+          const token = context.req.headers.authorization;
+
+          if (!token) {
+            throw new ServiceError(`No token provided`, {
+              code: "NO_TOKEN_PROVIDED_FOR_UPDATE_INTERNAL_PASSWORD",
+              statusCode: 401,
+              message:
+                "This error should never happen, please contact the administrator",
+            });
+          }
+
+          const [username, errors] = await sq.query((q) => q.userMe.username, {
+            headers: {
+              Authorization: token,
+            },
+          });
+
+          logger.info(`Updating password for ${username}`);
+
+          if (errors) {
+            throw new ServiceError(`Failed to get username: ${errors}`, {
+              code: "FETCH_USERNAME_FROM_ORIGIN_FAILED",
+              statusCode: 500,
+              message: "Failed to get username",
+            });
+          }
+
+          const coderRes = await Coder.updatePassword(username, password);
+          const sambaRes = await Samba.updatePassword(username, password);
+
+          return {
+            coder: coderRes.message,
+            samba: sambaRes,
+          };
+        },
+        { decorators: [requireAuthOnLens] }
+      ),
+
+      serviceUpdate: withContext(() => lensService.updateService, {
+        decorators: [requireAdminOnLens],
+      }),
     },
   },
   {

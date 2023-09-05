@@ -28,6 +28,7 @@
     "@snek-at/function": "*",
     "@snek-at/function-cli": "*",
     "@snek-at/function-server": "*",
+    "@snek-functions/jwt": "^0.0.35",
     "@types/http-proxy": "^1.17.11",
     "dotenv": "^16.3.1",
     "http-proxy": "^1.18.1",
@@ -39,7 +40,7 @@
     "@types/ip": "^1.1.0",
     "commitizen": "^4.2.5",
     "git-cz": "^4.9.0",
-    "snek-query": "^0.0.53"
+    "snek-query": "^0.0.83"
   },
   "scripts": {
     "develop": "yarn sf develop",
