@@ -76,6 +76,8 @@ WORKDIR ${LAMBDA_TASK_ROOT}
 
 EXPOSE 3000
 
+VOLUME [ "/app/data" ]
+
 ENTRYPOINT [ "./entrypoint.sh" ]
 
 # Start in serverless mode
