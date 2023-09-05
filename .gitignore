@@ -16,6 +16,7 @@ package-lock.json
 # snek-function
 .sf
 
+venv/
 
 # SPDX-License-Identifier: (EUPL-1.2)
 # Copyright © 2019-2022 snek.at

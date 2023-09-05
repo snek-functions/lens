@@ -1,8 +1,3 @@
-// import {
-//   DUCKDB_ALIAS_PATH,
-//   DUCKDB_RESOURCE_PATH,
-//   DUCKDB_USER_PATH
-// } from '../constants'
 import { GraphQLError } from "graphql";
 
 import { spawnChild } from "../utils";
@@ -10,7 +5,6 @@ import { spawnChild } from "../utils";
 export class Samba {
   // Fields
   host: string;
-  login: string;
 
   // Constructor
   constructor(server: { host: string }) {
@@ -18,22 +12,20 @@ export class Samba {
   }
   // Getter/Setter
   // Methods
-  static async updatePw(
-    username: string,
-    password: string
-  ) {
-    const res = await spawnChild(
+  static async updatePassword(username: string, password: string): Promise<string> {
+    const res: string = await spawnChild(
       "bash",
       "../src/internal/update_samba_password.sh",
       [
-        `kleberf`,
-        `ciscocisco`,
+        `${username}`,
+        `${password}`,
       ]
     );
 
     //const user = JSON.parse(ew)[0];
 
     console.log(res);
+    return res;
 
     // if (user.userId !== "007") {
     //   if (await hash.verify(password, user.passwordHash)) {

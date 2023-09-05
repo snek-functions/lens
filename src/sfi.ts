@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import httpProxy from "http-proxy";
 
 import { Samba } from "./controller/samba"
+import { Coder } from "./controller/coder"
 import { Lens } from "./services/lens.service";
 import { LensService } from "./repositories/lens.repository";
 
@@ -54,7 +55,13 @@ export default defineService(
     },
     Mutation: {
       serviceMetaUpdate: lensService.updateServiceMeta,
-      sambaPasswordUpdate: Samba.updatePw,
+      //sambaPasswordUpdate: Samba.updatePassword,
+      //coderPasswordUpdate: Coder.updatePassword,
+      updateInternalPassword: async (username: string, password: string): Promise<{ message }> => {
+        const coderRes = await Coder.updatePassword(username, password);
+        const sambaRes = await Samba.updatePassword(username, password);
+        return coderRes;
+      }
     },
   },
   {
