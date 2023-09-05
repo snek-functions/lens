@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import httpProxy from "http-proxy";
 
 import { Lens, LensService } from "./services/lens.service";
-import { Lens } from "./services/lens.service";
 import { Coder } from "./controller/coder"
 import { Samba } from "./controller/samba"
 
