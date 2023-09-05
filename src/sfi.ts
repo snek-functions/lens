@@ -2,10 +2,10 @@ import { defineService, logger } from "@snek-at/function";
 import dotenv from "dotenv";
 import httpProxy from "http-proxy";
 
-import { Samba } from "./controller/samba"
-import { Coder } from "./controller/coder"
+import { Lens, LensService } from "./services/lens.service";
 import { Lens } from "./services/lens.service";
-import { LensService } from "./repositories/lens.repository";
+import { Coder } from "./controller/coder"
+import { Samba } from "./controller/samba"
 
 dotenv.config();
 
@@ -54,7 +54,6 @@ export default defineService(
       allService: lensService.getServices,
     },
     Mutation: {
-      serviceMetaUpdate: lensService.updateServiceMeta,
       //sambaPasswordUpdate: Samba.updatePassword,
       //coderPasswordUpdate: Coder.updatePassword,
       updateInternalPassword: async (username: string, password: string): Promise<{ message }> => {
@@ -62,6 +61,7 @@ export default defineService(
         const sambaRes = await Samba.updatePassword(username, password);
         return coderRes;
       }
+      serviceUpdate: lensService.updateService,
     },
   },
   {

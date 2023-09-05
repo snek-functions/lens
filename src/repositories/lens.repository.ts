@@ -1,84 +1,50 @@
 import fs from "fs/promises";
 
 // Define the path to the file where services will be stored
-const servicesFilePath = "services.json";
+const servicesFilePath = "./data/service-meta.json";
 
 // Repository for Lens services (persisted on disk)
-export type LensService = {
-  id: string;
-  meta?: {
-    label?: string;
-    icon?: string;
-  };
-  fqdn: string;
-  host: string;
-  port: number;
-  isSecure: boolean;
+export type LensServiceMeta = {
+  label?: string;
+  icon?: string;
 };
 
-export const writeServices = async (services: LensService[]) => {
-  try {
-    const existingServices = await readServices();
-
-    // Update existing services with new labels, create new services if they don't exist, and remove services that no longer exist
-    const updatedServices = services.map((service) => {
-      const existingService = existingServices.find((s) => s.id === service.id);
-
-      if (existingService === undefined) {
-        return service;
-      }
-
-      return {
-        ...existingService,
-        meta: {
-          ...existingService.meta,
-          ...service.meta,
-        },
-      };
-    });
-
-    await fs.writeFile(servicesFilePath, JSON.stringify(updatedServices));
-
-    return updatedServices;
-  } catch (error) {
-    console.error("Error writing services:", error);
-
-    return [];
-  }
+export type ServiceMetaState = {
+  [serviceId: string]: LensServiceMeta;
 };
 
-export const readServices = async (): Promise<LensService[]> => {
+const readServiceMeta = async (): Promise<ServiceMetaState> => {
   try {
     const data = await fs.readFile(servicesFilePath, "utf-8");
+
     return JSON.parse(data);
   } catch (error) {
-    return [];
+    return {};
   }
 };
 
-export const updateServiceMeta = async (
-  id: string,
-  meta: LensService["meta"]
-) => {
-  try {
-    const services = await readServices();
-    const updatedServices = services.map((service) =>
-      service.id === id
-        ? {
-            ...service,
-            meta: {
-              ...service.meta,
-              ...meta,
-            },
-          }
-        : service
-    );
-    await writeServices(updatedServices);
-
-    return updatedServices;
-  } catch (error) {
-    console.error("Error updating service label:", error);
-
-    return [];
-  }
+const writeServiceMeta = async (serviceMeta: ServiceMetaState) => {
+  await fs.writeFile(servicesFilePath, JSON.stringify(serviceMeta));
 };
+
+export class LensRepository {
+  async getServiceMeta(): Promise<ServiceMetaState> {
+    return await readServiceMeta();
+  }
+
+  async updateServiceMeta(
+    id: string,
+    meta: LensServiceMeta
+  ): Promise<ServiceMetaState> {
+    const serviceMeta = await readServiceMeta();
+
+    serviceMeta[id] = {
+      ...serviceMeta[id],
+      ...meta,
+    };
+
+    await writeServiceMeta(serviceMeta);
+
+    return serviceMeta;
+  }
+}

@@ -1,10 +1,18 @@
 import {
-  LensService,
-  readServices,
-  writeServices,
-  updateServiceMeta,
+  LensServiceMeta,
+  LensRepository,
 } from "../repositories/lens.repository";
 import { NetworkScanner } from "./network-scanner.service";
+
+// Repository for Lens services (persisted on disk)
+export type LensService = {
+  id: string;
+  meta?: LensServiceMeta;
+  fqdn: string;
+  host: string;
+  port: number;
+  isSecure: boolean;
+};
 
 export class Lens {
   LENS_BASE_DOMAIN = process.env.LENS_BASE_DOMAIN ?? "lens.atsnek.com";
@@ -12,6 +20,7 @@ export class Lens {
   networkScanner: NetworkScanner;
   name: string;
   services: LensService[] = [];
+  repository: LensRepository = new LensRepository();
 
   constructor() {
     this.name = process.env.LENS_NAME ?? "application";
@@ -21,23 +30,27 @@ export class Lens {
     this.networkScanner = new NetworkScanner(LENS_NETWORKS, LENS_PORTS);
 
     this.getServices = this.getServices.bind(this);
-    this.updateServiceMeta = this.updateServiceMeta.bind(this);
+    this.updateService = this.updateService.bind(this);
   }
 
   async getServices() {
-    if (!this.services) {
-      this.services = await readServices();
-    }
+    const serviceMeta = await this.repository.getServiceMeta();
+
+    // Merge serviceMeta with services
+    this.services = this.services.map((service) => {
+      return {
+        ...service,
+        meta: serviceMeta[service.id],
+      };
+    });
 
     return this.services;
   }
 
-  async updateServiceMeta(id: string, meta: LensService["meta"]) {
-    const newServices = await updateServiceMeta(id, meta);
+  async updateService(id: string, meta: LensServiceMeta) {
+    await this.repository.updateServiceMeta(id, meta);
 
-    this.services = newServices;
-
-    return newServices;
+    return (await this.getServices()).find((service) => service.id === id);
   }
 
   autoDiscoveryInterval: NodeJS.Timeout | undefined = undefined;
@@ -63,7 +76,7 @@ export class Lens {
         }
       });
 
-      this.services = await writeServices(serviceList);
+      this.services = serviceList;
 
       return serviceList;
     };
@@ -80,7 +93,7 @@ export class Lens {
 
     this.autoDiscoveryInterval = setInterval(
       async () => {
-        const services = await buildServiceList();
+        await buildServiceList();
 
         cb(this.services);
       },
