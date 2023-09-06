@@ -10,7 +10,7 @@
     - name: Add user with a bash shell
       user:
         name: "{{ username }}"
-        shell: "/bin/nologin"
+        shell: "/bin/bash"
         #groups: wheel
         #append: yes
         comment: "{{ firstname }} {{ lastname }}"
