@@ -1,4 +1,5 @@
 import fs from "fs/promises";
+import path from "path";
 
 // Define the path to the file where services will be stored
 const servicesFilePath = "./data/service-meta.json";
@@ -24,6 +25,11 @@ const readServiceMeta = async (): Promise<ServiceMetaState> => {
 };
 
 const writeServiceMeta = async (serviceMeta: ServiceMetaState) => {
+  const folderPath = path.dirname(servicesFilePath);
+
+  // Create the directory if it doesn't exist
+  await fs.mkdir(folderPath, { recursive: true });
+
   await fs.writeFile(servicesFilePath, JSON.stringify(serviceMeta));
 };
 

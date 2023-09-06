@@ -76,7 +76,7 @@ WORKDIR ${LAMBDA_TASK_ROOT}
 
 EXPOSE 3000
 
-VOLUME [ "/app/data" ]
+VOLUME [ "/var/task/data" ]
 
 ENTRYPOINT [ "./entrypoint.sh" ]
 
