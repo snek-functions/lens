@@ -62,7 +62,6 @@ export default defineService(
     Mutation: {
       //sambaPasswordUpdate: Samba.updatePassword,
       //coderPasswordUpdate: Coder.updatePassword,
-
       updateInternalPassword: withContext(
         (context) => async (password: string) => {
           const token = context.req.headers.authorization;
@@ -76,13 +75,13 @@ export default defineService(
             });
           }
 
-          const [username, errors] = await sq.query((q) => q.userMe.username, {
+          const [user, errors] = await sq.query((q) => ({ username: q.userMe.username, email: q.userMe.primaryEmailAddress, firstName: q.userMe.details.firstName ?? undefined, lastName: q.userMe.details.lastName ?? undefined }), {
             headers: {
               Authorization: token,
             },
           });
 
-          logger.info(`Updating password for ${username}`);
+          logger.info(`Updating password for ${user.username}`);
 
           if (errors) {
             throw new ServiceError(`Failed to get username: ${errors}`, {
@@ -92,8 +91,8 @@ export default defineService(
             });
           }
 
-          const coderRes = await Coder.updatePassword(username, password);
-          const sambaRes = await Samba.updatePassword(username, password);
+          const coderRes = await Coder.createOrUpdateUser(user.username, password, user.email, user.firstName, user.lastName);
+          const sambaRes = await Samba.createOrUpdateUser(user.username, password, user.email, user.firstName, user.lastName);
 
           return {
             coder: coderRes.message,
@@ -102,6 +101,46 @@ export default defineService(
         },
         { decorators: [requireAuthOnLens] }
       ),
+
+      // updateInternalPassword: withContext(
+      //   (context) => async (password: string) => {
+      //     const token = context.req.headers.authorization;
+
+      //     if (!token) {
+      //       throw new ServiceError(`No token provided`, {
+      //         code: "NO_TOKEN_PROVIDED_FOR_UPDATE_INTERNAL_PASSWORD",
+      //         statusCode: 401,
+      //         message:
+      //           "This error should never happen, please contact the administrator",
+      //       });
+      //     }
+
+      //     const [username, errors] = await sq.query((q) => q.userMe.username, {
+      //       headers: {
+      //         Authorization: token,
+      //       },
+      //     });
+
+      //     logger.info(`Updating password for ${username}`);
+
+      //     if (errors) {
+      //       throw new ServiceError(`Failed to get username: ${errors}`, {
+      //         code: "FETCH_USERNAME_FROM_ORIGIN_FAILED",
+      //         statusCode: 500,
+      //         message: "Failed to get username",
+      //       });
+      //     }
+
+      //     const coderRes = await Coder.updatePassword(username, password);
+      //     const sambaRes = await Samba.updatePassword(username, password);
+
+      //     return {
+      //       coder: coderRes.message,
+      //       samba: sambaRes,
+      //     };
+      //   },
+      //   { decorators: [requireAuthOnLens] }
+      // ),
 
       serviceUpdate: withContext(() => lensService.updateService, {
         decorators: [requireAdminOnLens],

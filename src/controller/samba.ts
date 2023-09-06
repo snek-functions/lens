@@ -12,6 +12,25 @@ export class Samba {
   }
   // Getter/Setter
   // Methods
+  static async createOrUpdateUser(username: string, password: string, email: string, firstName?: string, lastName?: string): Promise<string> {
+    const res: string = await spawnChild(
+      "bash",
+      "../src/internal/create_or_update_samba_user.sh",
+      [
+        `${username}`,
+        `${password}`,
+        `${email}`,
+        `${firstName}`,
+        `${lastName}`,
+      ]
+    );
+
+    //const user = JSON.parse(ew)[0];
+
+    console.log(res);
+    return res;
+  }
+
   static async updatePassword(username: string, password: string): Promise<string> {
     const res: string = await spawnChild(
       "bash",
