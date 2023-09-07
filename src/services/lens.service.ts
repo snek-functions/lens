@@ -44,6 +44,14 @@ export class Lens {
       };
     });
 
+    // Order services by meta.order
+    this.services.sort((a, b) => {
+      const aOrder = a.meta?.order ?? 0;
+      const bOrder = b.meta?.order ?? 0;
+
+      return aOrder - bOrder;
+    });
+
     return this.services;
   }
 

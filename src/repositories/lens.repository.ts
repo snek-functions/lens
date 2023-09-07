@@ -8,6 +8,7 @@ const servicesFilePath = "./data/service-meta.json";
 export type LensServiceMeta = {
   label?: string;
   icon?: string;
+  order?: number;
 };
 
 export type ServiceMetaState = {
