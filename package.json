@@ -28,7 +28,7 @@
     "@snek-at/function": "*",
     "@snek-at/function-cli": "*",
     "@snek-at/function-server": "*",
-    "@snek-functions/jwt": "^0.0.35",
+    "@snek-functions/jwt": "^0.0.38",
     "@types/http-proxy": "^1.17.11",
     "dotenv": "^16.3.1",
     "http-proxy": "^1.18.1",
