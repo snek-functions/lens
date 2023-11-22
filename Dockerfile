@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: (EUPL-1.2)
 # Copyright © 2022 snek.at
-FROM --platform=linux/amd64 node:18.8.0-slim
+FROM --platform=linux/amd64 node:18-bookworm
 
 LABEL description="This container serves as an entry point for our future Snek Function projects."
 LABEL org.opencontainers.image.source="https://github.com/snek-functions/lens"
@@ -48,8 +48,8 @@ RUN set -ex \
     && rm -rf venv \
     && mkdir -p venv/bin \
     && ln -s $(which python3) venv/bin/python \
-    && venv/bin/python -m pip install -U pip \
-    && venv/bin/python -m pip install -r requirements.txt \
+    && venv/bin/python -m pip install -U pip --break-system-packages \
+    && venv/bin/python -m pip install -r requirements.txt --break-system-packages \
     && find src -mindepth 1 -maxdepth 1 -not -name internal -exec rm -rf {} + \
     && mv .sf src node_modules venv ${LAMBDA_TASK_ROOT} \
     && rm -r ${SNEK_FUNCTIONS_BUILD_DIR}/* \
