@@ -1,12 +1,15 @@
 {
-  "name": "sq-client",
-  "version": "0.0.1",
+  "name": "@snek-functions/origin",
+  "version": "0.8.25",
   "description": "Auto-generated API client",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc"
   },
+  "files": [
+    "dist"
+  ],
   "author": "",
   "license": "",
   "dependencies": {
