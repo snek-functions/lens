@@ -28,7 +28,7 @@ COPY package.json entrypoint.sh ${LAMBDA_TASK_ROOT}/
 # Copy all files form the . to the build dir
 COPY ./ ${SNEK_FUNCTIONS_BUILD_DIR}/
 
-RUN chmod +x entrypoint.sh
+//RUN chmod +x entrypoint.sh
 
 WORKDIR ${SNEK_FUNCTIONS_BUILD_DIR}
 
