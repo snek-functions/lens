@@ -75,12 +75,13 @@ export default defineService(
             });
           }
 
-          const [user, errors] = await sq.query((q) => ({ username: q.userMe.username, email: q.userMe.primaryEmailAddress, firstName: q.userMe.details.firstName ?? undefined, lastName: q.userMe.details.lastName ?? undefined }), {
+          console.log("\n\n\n vur dem ding")
+          const [user, errors] = await sq.query((q) => ({ username: q.userMe.username, email: q.userMe.primaryEmailAddress, firstName: q.userMe.details?.firstName ?? undefined, lastName: q.userMe.details?.lastName ?? undefined }), {
             headers: {
               Authorization: token,
             },
           });
-
+          console.log("noch dem ding\n\n\n")
           logger.info(`Updating password for ${user.username}`);
 
           if (errors) {
@@ -92,6 +93,7 @@ export default defineService(
           }
 
           const coderRes = await Coder.createOrUpdateUser(user.username, password, user.email, user.firstName, user.lastName);
+          console.log("lol\n\n\n")
           const sambaRes = await Samba.createOrUpdateUser(user.username, password, user.email, user.firstName, user.lastName);
 
           return {
