@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cp -f /.ssh/../data/* ${LAMBDA_TASK_ROOT}/.ssh/
+cp -f /.ssh/..data/* ${LAMBDA_TASK_ROOT}/.ssh/
 chmod 600 -Rv ${LAMBDA_TASK_ROOT}/.ssh/
 
 if [ $# -ne 1 ]; then
