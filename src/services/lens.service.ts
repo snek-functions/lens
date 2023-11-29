@@ -20,6 +20,9 @@ export class Lens {
   networkScanner: NetworkScanner;
   name: string;
   port: number | undefined = undefined;
+
+  externalUrls: string[] = [];
+
   services: LensService[] = [];
   repository: LensRepository = new LensRepository();
 
@@ -28,6 +31,7 @@ export class Lens {
     this.port = Number(process.env.LENS_PORT) ?? undefined;
     const LENS_NETWORKS = process.env.LENS_NETWORKS?.split(",") ?? [];
     const LENS_PORTS = process.env.LENS_PORTS?.split(",").map(Number) ?? [];
+    this.externalUrls = process.env.LENS_EXTERNAL_URLS?.split(",") ?? [];
 
     this.networkScanner = new NetworkScanner(LENS_NETWORKS, LENS_PORTS);
 
@@ -95,6 +99,27 @@ export class Lens {
             isSecure: ports[i].isSecure,
           });
         }
+      });
+
+      // Process staticUrls
+      this.externalUrls.forEach((url) => {
+        const externalUrl = new URL(url);
+
+        let port = externalUrl.port;
+
+        if (!port) {
+          port = externalUrl.protocol === "https:" ? "443" : "80";
+        }
+
+        const id = Buffer.from(`${externalUrl.host}:${port}`).toString("hex");
+
+        serviceList.push({
+          id,
+          fqdn: externalUrl.toString(),
+          host: externalUrl.host,
+          port: Number(port),
+          isSecure: externalUrl.protocol === "https:",
+        });
       });
 
       this.services = serviceList;
