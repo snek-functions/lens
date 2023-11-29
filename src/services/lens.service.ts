@@ -113,9 +113,14 @@ export class Lens {
 
         const id = Buffer.from(`${externalUrl.host}:${port}`).toString("hex");
 
+        // externalUrl without protocol
+        const fqdn = externalUrl
+          .toString()
+          .replace(`${externalUrl.protocol}//`, "");
+
         serviceList.push({
           id,
-          fqdn: externalUrl.toString(),
+          fqdn,
           host: externalUrl.host,
           port: Number(port),
           isSecure: externalUrl.protocol === "https:",
