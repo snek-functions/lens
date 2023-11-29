@@ -19,11 +19,13 @@ export class Lens {
 
   networkScanner: NetworkScanner;
   name: string;
+  port: number | undefined = undefined;
   services: LensService[] = [];
   repository: LensRepository = new LensRepository();
 
   constructor() {
     this.name = process.env.LENS_NAME ?? "application";
+    this.port = Number(process.env.LENS_PORT) ?? undefined;
     const LENS_NETWORKS = process.env.LENS_NETWORKS?.split(",") ?? [];
     const LENS_PORTS = process.env.LENS_PORTS?.split(",").map(Number) ?? [];
 
@@ -31,6 +33,16 @@ export class Lens {
 
     this.getServices = this.getServices.bind(this);
     this.updateService = this.updateService.bind(this);
+  }
+
+  getURI() {
+    let url = `${this.name}.${this.LENS_BASE_DOMAIN}`;
+
+    if (this.port) {
+      url = `${url}:${this.port}`;
+    }
+
+    return url;
   }
 
   async getServices() {
@@ -72,7 +84,8 @@ export class Lens {
       discovery.forEach(({ host, ports }) => {
         for (let i = 0; i < ports.length; i++) {
           const id = Buffer.from(`${host}:${ports[i].port}`).toString("hex");
-          const fqdn = `${id}.${this.name}.${this.LENS_BASE_DOMAIN}`;
+
+          const fqdn = `${id}.${this.getURI()}`;
 
           serviceList.push({
             id,
