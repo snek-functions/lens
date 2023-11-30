@@ -1,3 +1,5 @@
+import crypto from "crypto";
+
 import {
   LensServiceMeta,
   LensRepository,
@@ -12,6 +14,7 @@ export type LensService = {
   host: string;
   port: number;
   isSecure: boolean;
+  redirect?: string;
 };
 
 export class Lens {
@@ -47,6 +50,14 @@ export class Lens {
     }
 
     return url;
+  }
+
+  private generateId(host: string, port: number) {
+    return crypto
+      .createHash("sha256")
+      .update(`${host}:${port}`)
+      .digest("hex")
+      .slice(0, 16);
   }
 
   async getServices() {
@@ -87,7 +98,7 @@ export class Lens {
 
       discovery.forEach(({ host, ports }) => {
         for (let i = 0; i < ports.length; i++) {
-          const id = Buffer.from(`${host}:${ports[i].port}`).toString("hex");
+          const id = this.generateId(host, ports[i].port);
 
           const fqdn = `${id}.${this.getURI()}`;
 
@@ -111,12 +122,10 @@ export class Lens {
           port = externalUrl.protocol === "https:" ? "443" : "80";
         }
 
-        const id = Buffer.from(`${externalUrl.host}:${port}`).toString("hex");
+        // Buffer.from(`${externalUrl.host}:${port}`).toString("hex");
+        const id = this.generateId(externalUrl.hostname, Number(port));
 
-        // externalUrl without protocol
-        const fqdn = externalUrl
-          .toString()
-          .replace(`${externalUrl.protocol}//`, "");
+        const fqdn = `${id}.${this.getURI()}`;
 
         serviceList.push({
           id,
@@ -124,6 +133,7 @@ export class Lens {
           host: externalUrl.host,
           port: Number(port),
           isSecure: externalUrl.protocol === "https:",
+          redirect: url,
         });
       });
 

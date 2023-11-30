@@ -41,7 +41,7 @@ const buildProxy = (service: LensService) => {
 const serviceMap = new Map<
   string,
   {
-    proxy: httpProxy;
+    proxy?: httpProxy;
     service: LensService;
   }
 >();
@@ -75,13 +75,21 @@ export default defineService(
             });
           }
 
-          console.log("\n\n\n vur dem ding")
-          const [user, errors] = await sq.query((q) => ({ username: q.userMe.username, email: q.userMe.primaryEmailAddress, firstName: q.userMe.details?.firstName ?? undefined, lastName: q.userMe.details?.lastName ?? undefined }), {
-            headers: {
-              Authorization: token,
-            },
-          });
-          console.log("noch dem ding\n\n\n")
+          console.log("\n\n\n vur dem ding");
+          const [user, errors] = await sq.query(
+            (q) => ({
+              username: q.userMe.username,
+              email: q.userMe.primaryEmailAddress,
+              firstName: q.userMe.details?.firstName ?? undefined,
+              lastName: q.userMe.details?.lastName ?? undefined,
+            }),
+            {
+              headers: {
+                Authorization: token,
+              },
+            }
+          );
+          console.log("noch dem ding\n\n\n");
           logger.info(`Updating password for ${user.username}`);
 
           if (errors) {
@@ -92,9 +100,21 @@ export default defineService(
             });
           }
 
-          const coderRes = await Coder.createOrUpdateUser(user.username, password, user.email, user.firstName, user.lastName);
-          console.log("lol\n\n\n")
-          const sambaRes = await Samba.createOrUpdateUser(user.username, password, user.email, user.firstName, user.lastName);
+          const coderRes = await Coder.createOrUpdateUser(
+            user.username,
+            password,
+            user.email,
+            user.firstName,
+            user.lastName
+          );
+          console.log("lol\n\n\n");
+          const sambaRes = await Samba.createOrUpdateUser(
+            user.username,
+            password,
+            user.email,
+            user.firstName,
+            user.lastName
+          );
 
           return {
             coder: coderRes.message,
@@ -161,45 +181,79 @@ export default defineService(
             return;
           }
 
-          // build proxy
-          const proxy = buildProxy(service);
+          if (service.redirect) {
+            // add proxy to serviceMap
+            serviceMap.set(service.id, {
+              service,
+            });
 
-          // add proxy to serviceMap
-          serviceMap.set(service.id, {
-            proxy,
-            service,
-          });
+            // Use redirect instead of proxy
 
-          // add service to fqdnMap
-          fqdnProxyMap.set(service.fqdn, {
-            proxy,
-            service,
-          });
+            app.use((req, res, next) => {
+              const serviceId = req.subdomains[req.subdomains.length - 1];
 
-          // add proxy to app
-          app.use((req, res, next) => {
-            const [lens, application, serviceId] = req.subdomains;
+              if (serviceId === undefined) {
+                next();
+                return;
+              }
 
-            if (
-              lens !== "lens" ||
-              application === undefined ||
-              serviceId === undefined
-            ) {
-              next();
-              return;
-            }
+              // Make sure that the service is actually available
+              if (service.id !== serviceId) {
+                next();
+                return;
+              }
 
-            // Make sure that the service is actually available
-            console.log("Checking service", service.id, serviceId);
-            if (service.id !== serviceId) {
-              next();
-              return;
-            }
+              console.log("Redirecting request to", service.id, serviceId);
 
-            console.log("Proxying request to", service.id, serviceId);
+              if (service.redirect) {
+                console.log("Redirecting to", service.redirect);
 
-            proxy.web(req, res);
-          });
+                res.redirect(service.redirect);
+              } else {
+                res.status(404).send("Not found. Redirect is not set.");
+              }
+            });
+          } else {
+            // build proxy
+            const proxy = buildProxy(service);
+
+            // add proxy to serviceMap
+            serviceMap.set(service.id, {
+              proxy,
+              service,
+            });
+
+            // add service to fqdnMap
+            fqdnProxyMap.set(service.fqdn, {
+              proxy,
+              service,
+            });
+
+            // add proxy to app
+            app.use((req, res, next) => {
+              const [lens, application, serviceId] = req.subdomains;
+
+              if (
+                lens !== "lens" ||
+                application === undefined ||
+                serviceId === undefined
+              ) {
+                next();
+                return;
+              }
+
+              // Make sure that the service is actually available
+              console.log("Checking service", service.id, serviceId);
+              if (service.id !== serviceId) {
+                next();
+                return;
+              }
+
+              console.log("Proxying request to", service.id, serviceId);
+
+              proxy.web(req, res);
+            });
+          }
         });
       });
 
