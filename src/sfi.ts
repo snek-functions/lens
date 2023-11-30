@@ -259,9 +259,16 @@ export default defineService(
       server.on("upgrade", async (req, socket, head) => {
         const serverName = req.socket.servername;
 
-        // Find serverName in serviceMap service.fqdn value
+        console.log("Trying to upgrade", serverName, {
+          localPort: req.socket.localPort,
+          localAddress: req.socket.localAddress,
+          remotePort: req.socket.remotePort,
+          remoteAddress: req.socket.remoteAddress,
+        });
 
-        const proxy = fqdnProxyMap.get(serverName)?.proxy;
+        const fqdn = `${serverName}:${req.socket.localPort}`;
+
+        const proxy = fqdnProxyMap.get(fqdn)?.proxy;
 
         if (proxy) {
           proxy.ws(req, socket, head);
