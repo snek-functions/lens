@@ -266,9 +266,15 @@ export default defineService(
           remoteAddress: req.socket.remoteAddress,
         });
 
-        const fqdn = `${serverName}:${req.socket.localPort}`;
+        let proxy = fqdnProxyMap.get(serverName)?.proxy;
 
-        const proxy = fqdnProxyMap.get(fqdn)?.proxy;
+        if (!proxy) {
+          const fqdnWithPort = `${serverName}:${req.socket.localPort}`;
+
+          console.log("Trying to upgrade", fqdnWithPort);
+
+          proxy = fqdnProxyMap.get(fqdnWithPort)?.proxy;
+        }
 
         if (proxy) {
           proxy.ws(req, socket, head);
