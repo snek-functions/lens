@@ -231,13 +231,9 @@ export default defineService(
 
             // add proxy to app
             app.use((req, res, next) => {
-              const [lens, application, serviceId] = req.subdomains;
+              const serviceId = req.subdomains[req.subdomains.length - 1];
 
-              if (
-                lens !== "lens" ||
-                application === undefined ||
-                serviceId === undefined
-              ) {
+              if (serviceId === undefined) {
                 next();
                 return;
               }
