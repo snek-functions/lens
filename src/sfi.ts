@@ -259,19 +259,14 @@ export default defineService(
       server.on("upgrade", async (req, socket, head) => {
         const serverName = req.socket.servername;
 
-        console.log("Trying to upgrade", serverName, {
-          localPort: req.socket.localPort,
-          localAddress: req.socket.localAddress,
-          remotePort: req.socket.remotePort,
-          remoteAddress: req.socket.remoteAddress,
-        });
+        console.log("Upgrading", serverName);
 
         let proxy = fqdnProxyMap.get(serverName)?.proxy;
 
         if (!proxy) {
-          const fqdnWithPort = `${serverName}:${req.socket.localPort}`;
+          const fqdnWithPort = `${serverName}:${process.env.LENS_PORT}`;
 
-          console.log("Trying to upgrade", fqdnWithPort);
+          console.log("Trying to upgrade with LENS_PORT", fqdnWithPort);
 
           proxy = fqdnProxyMap.get(fqdnWithPort)?.proxy;
         }
