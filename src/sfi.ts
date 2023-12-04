@@ -100,12 +100,9 @@ export default defineService(
             });
           }
 
-          const coderRes = await Coder.createOrUpdateUser(
+          const coderRes = await Coder.updatePassword(
             user.username,
-            password,
-            user.email,
-            user.firstName,
-            user.lastName
+            password
           );
           console.log("lol\n\n\n");
           const sambaRes = await Samba.createOrUpdateUser(
