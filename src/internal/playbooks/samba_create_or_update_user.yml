@@ -23,7 +23,7 @@
       ansible.builtin.shell: >
         set -e -o pipefail
         && (pdbedit --user={{ username | quote }} 2>&1 > /dev/null)
-        || (echo '{{ password | quote }}'; echo '{{ password | quote }}')
+        || (echo {{ password | quote }}; echo {{ password | quote }})
         | smbpasswd -s -a {{ username | quote }}
       args:
         executable: /bin/bash
@@ -35,7 +35,7 @@
       ansible.builtin.shell: >
           set -e -o pipefail
           && (smbclient -U {{ username | quote }}%{{ password | quote }} -L 127.0.0.1 2>&1 > /dev/null)
-          || (echo '{{ password | quote }}'; echo '{{ password | quote }}')
+          || (echo {{ password | quote }}; echo {{ password | quote }})
           | smbpasswd {{ username | quote }}
       no_log: true
       args:
