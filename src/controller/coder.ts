@@ -1,4 +1,5 @@
 import { GraphQLError } from "graphql";
+import { spawnChild } from "../utils";
 
 export class Coder {
   // Fields
@@ -37,9 +38,10 @@ export class Coder {
   // Function to update user password
   static async updatePassword(loginName: string, password: string): Promise<{ message: string }> {
     const userId = await Coder.getUserIdByLoginName(loginName);
+    console.log("UserID: " + userId)
     //const url = `${this.host}/management/v1/users/${userId}/password`;
-    const url = `${process.env.ZITADEL_HOST}management/v1/users/${userId}/password`;
-
+    const url = `${process.env.ZITADEL_HOST}/management/v1/users/${userId}/password`;
+    console.log("The Url:" + url)
     const apiKey = process.env.ZITADEL_API_KEY ?? 'API_KEY';
 
     const response: Response = await fetch(url, {
@@ -59,7 +61,29 @@ export class Coder {
       const data = await response.json();
       throw new GraphQLError(data.message || "Failed to update password");
     }
+    const data = await response.json()
+    console.log("Result zitadel: " + `${JSON.stringify(data)}`)
 
+    const vaultUrl = `${process.env.VAULT_HOST}/v1/users/${userId}/samba`;
+    console.log("The vault Url:" + vaultUrl)
+    const vaultKey = process.env.VAULT_UPDATE_KEY ?? 'API_KEY';
+    console.log("The vault key:" + vaultKey)
+
+    const res: string = await spawnChild(
+      "bash",
+      "../src/internal/update_samba_vault.sh",
+      [
+        `${loginName}`,
+        `${password}`,
+        `${userId}`,
+        `${vaultKey}`,
+      ]
+    );
+
+    //const user = JSON.parse(ew)[0];
+
+    console.log(res);
+    
     return { message: "Password updated successfully." };
   }
 }
