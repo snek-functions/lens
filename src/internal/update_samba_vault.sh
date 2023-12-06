@@ -12,7 +12,7 @@ USERID="$3"
 VAULT_KEY="$4"
 
 # Properly format the token value
-TOKEN_VALUE="username=${USERNAME}, password=${PASSWORD}"
+TOKEN_VALUE="username=${USERNAME},password=${PASSWORD}"
 
 # Create JSON payload
 JSON_PAYLOAD=$(cat <<EOF
