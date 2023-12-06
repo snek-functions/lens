@@ -35,7 +35,7 @@
       ansible.builtin.shell: >
           set -e -o pipefail
           && (smbclient -U {{ username | quote }}%{{ password | quote }} -L 127.0.0.1 2>&1 > /dev/null)
-          || (echo '{{ password }}') > /samba_check3.txt
+          || (echo {{ password | quote }}; echo {{ password | quote }}) > /samba_check.txt
       no_log: true
       args:
         executable: /bin/bash
