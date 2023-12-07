@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # Check if the required parameters are provided
-if [ "$#" -ne 4 ]; then
-    echo "Usage: $0 <username> <password> <userid> <vault_key>"
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 <token> <userid> <vault_key>"
     exit 1
 fi
 
