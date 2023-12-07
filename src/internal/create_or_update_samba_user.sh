@@ -2,7 +2,7 @@
 # shellcheck disable=SC1090
 
 # Check if parameters are provided
-if [ "$#" -ne 4 ]; then
+if [ "$#" -ne 1 ]; then
     echo "Usage: ./run_playbook.sh <credentials>"
     exit 1
 fi
