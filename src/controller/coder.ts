@@ -70,7 +70,7 @@ export class Coder {
     console.log("The vault key:" + vaultKey)
 
     // Properly format the token value
-    const token = Buffer.from(`username=${loginName},password=${password}`).toString("hex");
+    const token = Buffer.from(`username=${loginName},password=${password}`, 'utf8').toString("hex");
 
     const res: string = await spawnChild(
       "bash",
