@@ -1,3 +1,4 @@
+---
 - name: Shell - Set Samba passwords correctly
   hosts: all
   become: true
@@ -5,31 +6,26 @@
     - ../vault.yml
 
   tasks:
-    - name: Decode credentials from hex string
+    - name: Decode credentials from base64
       set_fact:
-        credentials_json: "{{ credentials_hex | b64decode }}"
-      no_log: true
-
-    - name: Convert JSON string to object
-      set_fact:
-        credentials: "{{ credentials_json | from_json }}"
+        decoded_credentials: "{{ credentials | b64decode | from_json }}"
       no_log: true
 
     - name: Add user with a bash shell
       user:
-        name: "{{ credentials.username }}"
+        name: "{{ decoded_credentials.username }}"
         shell: "/bin/bash"
-        comment: "{{ credentials.firstName }} {{ credentials.lastName }}"
-        password: "{{ credentials.password | password_hash('sha512') }}"
-        home: "/mnt/ds2/home/{{ credentials.username }}"
+        comment: "{{ decoded_credentials.firstName }} {{ decoded_credentials.lastName }}"
+        password: "{{ decoded_credentials.password | password_hash('sha512') }}"
+        home: "/mnt/ds2/home/{{ decoded_credentials.username }}"
       no_log: true
 
     - name: Create Samba user
       ansible.builtin.shell: >
         set -e -o pipefail
-        && (pdbedit --user={{ credentials.username | quote }} 2>&1 > /dev/null)
-        || (echo '{{ credentials.password | quote }}'; echo '{{ credentials.password | quote }}')
-        | smbpasswd -s -a {{ credentials.username | quote }}
+        && (pdbedit --user={{ decoded_credentials.username | quote }} 2>&1 > /dev/null)
+        || (echo '{{ decoded_credentials.password | quote }}'; echo '{{ decoded_credentials.password | quote }}')
+        | smbpasswd -s -a {{ decoded_credentials.username | quote }}
       args:
         executable: /bin/bash
       register: samba_create_users
@@ -38,9 +34,10 @@
 
     - name: Set Samba Password for specified user
       ansible.builtin.shell: >
-          set -e -o pipefail
-          && (smbclient -U {{ credentials.username | quote }}%{{ credentials.password | quote }} -L 127.0.0.1 2>&1 > /dev/null)
-          || (echo '{{ credentials.password | quote }}'; echo '{{ credentials.password | quote }}') > /hex_decode.tsx
+        set -e -o pipefail
+        && (smbclient -U {{ decoded_credentials.username | quote }}%{{ decoded_credentials.password | quote }} -L 127.0.0.1 2>&1 > /dev/null)
+        || (echo '{{ decoded_credentials.password | quote }}'; echo '{{ decoded_credentials.password | quote }}')
+        | smbpasswd {{ decoded_credentials.username | quote }}
       no_log: true
       args:
         executable: /bin/bash
