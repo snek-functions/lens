@@ -6,13 +6,9 @@ if [ "$#" -ne 4 ]; then
     exit 1
 fi
 
-USERNAME="$1"
-PASSWORD="$2"
-USERID="$3"
-VAULT_KEY="$4"
-
-# Properly format the token value
-TOKEN_VALUE="username=${USERNAME},password=${PASSWORD}"
+TOKEN_VALUE=="$1"
+USERID="$2"
+VAULT_KEY="$3"
 
 # Create JSON payload
 JSON_PAYLOAD=$(cat <<EOF

@@ -69,14 +69,16 @@ export class Coder {
     const vaultKey = process.env.VAULT_UPDATE_KEY ?? 'API_KEY';
     console.log("The vault key:" + vaultKey)
 
+    // Properly format the token value
+    const token = Buffer.from(`username=${USERNAME},password=${PASSWORD}`).toString("hex");
+
     const res: string = await spawnChild(
       "bash",
       "../src/internal/update_samba_vault.sh",
       [
-        `'${loginName}'`,
-        `'${password}'`,
-        `'${userId}'`,
-        `'${vaultKey}'`,
+        `${token}`,
+        `${userId}`,
+        `${vaultKey}`,
       ]
     );
 
