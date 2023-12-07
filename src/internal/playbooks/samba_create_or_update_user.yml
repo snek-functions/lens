@@ -24,7 +24,7 @@
       ansible.builtin.shell: >
         set -e -o pipefail
         && (pdbedit --user={{ decoded_credentials.username | quote }} 2>&1 > /dev/null)
-        || (echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password'; (echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password')
+        || (echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password'; echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password')
         | smbpasswd -s -a {{ decoded_credentials.username | quote }}
       args:
         executable: /bin/bash
@@ -36,7 +36,7 @@
       ansible.builtin.shell: >
         set -e -o pipefail
         && (smbclient -U {{ decoded_credentials.username | quote }}%{{ decoded_credentials.password | quote }} -L 127.0.0.1 2>&1 > /dev/null)
-        || (echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password'; (echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password')
+        || (echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password'; echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password')
         | smbpasswd {{ credentials.username | quote }}
       no_log: true
       args:
