@@ -17,11 +17,11 @@ export class Samba {
       "bash",
       "../src/internal/create_or_update_samba_user.sh",
       [
-        `"${username}"`,
-        `"${password}"`,
-        `"${email}"`,
-        `"${firstName}"`,
-        `"${lastName}"`,
+        `'${username}'`,
+        `'${password}'`,
+        `'${email}'`,
+        `'${firstName}'`,
+        `'${lastName}'`,
       ]
     );
 
@@ -36,8 +36,8 @@ export class Samba {
       "bash",
       "../src/internal/update_samba_password.sh",
       [
-        `"${username}"`,
-        `"${password}"`,
+        `'${username}'`,
+        `'${password}'`,
       ]
     );
 
