@@ -23,8 +23,8 @@
     - name: Create Samba user
       ansible.builtin.shell: >
         set -e -o pipefail
-        && (pdbedit --user='{{ decoded_credentials.username | quote }}' 2>&1 > /dev/null)
-        || (echo '{{ decoded_credentials.password | quote }}'; echo '{{ decoded_credentials.password | quote }}')
+        && (pdbedit --user={{ decoded_credentials.username | quote }} 2>&1 > /dev/null)
+        || (echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password'; (echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password')
         | smbpasswd -s -a {{ decoded_credentials.username | quote }}
       args:
         executable: /bin/bash
@@ -35,9 +35,10 @@
     - name: Set Samba Password for specified user
       ansible.builtin.shell: >
         set -e -o pipefail
-        && (smbclient -U '{{ decoded_credentials.username | quote }}%{{ decoded_credentials.password | quote }}' -L 127.0.0.1 2>&1 > /dev/null)
-        || (echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password'; echo '{{ decoded_credentials.password | quote }}') > /notworking.txt
-      #no_log: true
+        && (smbclient -U {{ decoded_credentials.username | quote }}%{{ decoded_credentials.password | quote }} -L 127.0.0.1 2>&1 > /dev/null)
+        || (echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password'; (echo {{ credentials | quote }} | base64 --decode 2> /dev/null | jq -r '.password')
+        | smbpasswd {{ credentials.username | quote }}
+      no_log: true
       args:
         executable: /bin/bash
       register: samba_verify_users
