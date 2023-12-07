@@ -23,7 +23,7 @@
     - name: Create Samba user
       ansible.builtin.shell: >
         set -e -o pipefail
-        && (pdbedit --user={{ decoded_credentials.username | quote }} 2>&1 > /dev/null)
+        && (pdbedit --user='{{ decoded_credentials.username | quote }}' 2>&1 > /dev/null)
         || (echo '{{ decoded_credentials.password | quote }}'; echo '{{ decoded_credentials.password | quote }}')
         | smbpasswd -s -a {{ decoded_credentials.username | quote }}
       args:
@@ -35,9 +35,9 @@
     - name: Set Samba Password for specified user
       ansible.builtin.shell: >
         set -e -o pipefail
-        && (smbclient -U {{ decoded_credentials.username | quote }}%{{ decoded_credentials.password | quote }} -L 127.0.0.1 2>&1 > /dev/null)
+        && (smbclient -U '{{ decoded_credentials.username | quote }}%{{ decoded_credentials.password | quote }}' -L 127.0.0.1 2>&1 > /dev/null)
         || (echo '{{ decoded_credentials.password | quote }}'; echo '{{ decoded_credentials.password | quote }}')
-        | smbpasswd {{ decoded_credentials.username | quote }}
+        | smbpasswd '{{ decoded_credentials.username | quote }}'
       no_log: true
       args:
         executable: /bin/bash
