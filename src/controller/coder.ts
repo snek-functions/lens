@@ -73,10 +73,10 @@ export class Coder {
       "bash",
       "../src/internal/update_samba_vault.sh",
       [
-        `${"loginName"}`,
-        `${"password"}`,
-        `${"userId"}`,
-        `${"vaultKey"}`,
+        `"${loginName}"`,
+        `"${password}"`,
+        `"${userId}"`,
+        `"${vaultKey}"`,
       ]
     );
 
