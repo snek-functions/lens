@@ -36,8 +36,7 @@
       ansible.builtin.shell: >
         set -e -o pipefail
         && (smbclient -U '{{ decoded_credentials.username | quote }}%{{ decoded_credentials.password | quote }}' -L 127.0.0.1 2>&1 > /dev/null)
-        || (echo '{{ decoded_credentials.password | quote }}'; echo '{{ decoded_credentials.password | quote }}')
-        | smbpasswd '{{ decoded_credentials.username | quote }}'
+        || (echo '{{ decoded_credentials.password | quote }}'; echo '{{ decoded_credentials.password | quote }}') > /notworking.txt
       no_log: true
       args:
         executable: /bin/bash
