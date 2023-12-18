@@ -93,7 +93,7 @@ export default defineService(
           logger.info(`Updating password for ${user.username}`);
 
           if (errors) {
-            throw new ServiceError(`Failed to get username: ${errors}`, {
+            throw new ServiceError(`Failed to get username: ${errors.toString()}`, {
               code: "FETCH_USERNAME_FROM_ORIGIN_FAILED",
               statusCode: 500,
               message: "Failed to get username",
