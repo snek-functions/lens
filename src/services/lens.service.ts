@@ -5,6 +5,7 @@ import {
   LensRepository,
 } from "../repositories/lens.repository";
 import { NetworkScanner } from "./network-scanner.service";
+import { requireAuth } from "@getcronit/pylon";
 
 // Repository for Lens services (persisted on disk)
 export type LensService = {
@@ -61,6 +62,7 @@ export class Lens {
   }
 
   async getServices() {
+    console.log("Getting services");
     const serviceMeta = await this.repository.getServiceMeta();
 
     // Merge serviceMeta with services
@@ -82,19 +84,26 @@ export class Lens {
     return this.services;
   }
 
+  @requireAuth({
+    roles: ["lens:admin"],
+  })
   async updateService(id: string, meta: LensServiceMeta) {
     await this.repository.updateServiceMeta(id, meta);
 
     return (await this.getServices()).find((service) => service.id === id);
   }
 
-  autoDiscoveryInterval: NodeJS.Timeout | undefined = undefined;
+  autoDiscoveryInterval: Timer | undefined = undefined;
 
   async start(cb: (services: LensService[]) => void) {
     const buildServiceList = async () => {
       const serviceList: LensService[] = [];
 
+      console.log("Building service list");
+
       const discovery = await this.networkScanner.scanNetworks();
+
+      console.log("Discovery", discovery);
 
       discovery.forEach(({ host, ports }) => {
         for (let i = 0; i < ports.length; i++) {

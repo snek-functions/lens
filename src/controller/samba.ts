@@ -8,19 +8,26 @@ export class Samba {
 
   // Constructor
   constructor(server: { host: string }) {
-    this.host= server.host;
+    this.host = server.host;
   }
   // Getter/Setter
   // Methods
-  static async createOrUpdateUser(username: string, password: string, email: string, firstName?: string, lastName?: string): Promise<string> {
-    const credentials = Buffer.from(JSON.stringify({username, password, email, firstName, lastName}), 'utf8').toString("base64");
+  static async createOrUpdateUser(
+    username: string,
+    password: string,
+    email: string,
+    firstName?: string,
+    lastName?: string
+  ): Promise<string> {
+    const credentials = Buffer.from(
+      JSON.stringify({ username, password, email, firstName, lastName }),
+      "utf8"
+    ).toString("base64");
 
     const res: string = await spawnChild(
       "bash",
       "../src/internal/create_or_update_samba_user.sh",
-      [
-        `'${credentials}'`,
-      ]
+      [`'${credentials}'`]
     );
 
     //const user = JSON.parse(ew)[0];
@@ -29,14 +36,14 @@ export class Samba {
     return res;
   }
 
-  static async updatePassword(username: string, password: string): Promise<string> {
+  static async updatePassword(
+    username: string,
+    password: string
+  ): Promise<string> {
     const res: string = await spawnChild(
       "bash",
       "../src/internal/update_samba_password.sh",
-      [
-        `'${username}'`,
-        `'${password}'`,
-      ]
+      [`'${username}'`, `'${password}'`]
     );
 
     //const user = JSON.parse(ew)[0];

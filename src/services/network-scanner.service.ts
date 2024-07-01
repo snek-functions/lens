@@ -1,11 +1,8 @@
-import { logger } from "@snek-at/function";
+import { logger } from "@getcronit/pylon";
 import ip from "ip";
 
-import {
-  connect as connectInsecure,
-  createServer as createInsecureServer,
-} from "net";
-import { connect as connectSecure } from "tls";
+import * as http from "http";
+import * as https from "https";
 
 type NetworkScannerDiscovery = Array<{
   host: string;
@@ -38,6 +35,7 @@ export class NetworkScanner {
     const promises: Promise<void>[] = [];
 
     this.networks.forEach((network) => {
+      console.log(`Scanning network ${network}`);
       const networkAddress = ip.cidrSubnet(network).networkAddress;
       const numHosts = ip.cidrSubnet(network).numHosts;
 
@@ -53,7 +51,11 @@ export class NetworkScanner {
       }
     });
 
+    console.log("Scanning networks...");
+
     await Promise.all(promises);
+
+    console.log("Network scan complete");
 
     // Remove hosts without open ports for isSecure
     this.networks.forEach((network) => {
@@ -70,35 +72,38 @@ export class NetworkScanner {
   private async checkPort(host: string, port: number): Promise<void> {
     const connect = (isSecure: boolean) => {
       return new Promise<boolean>((resolve) => {
-        const socket = isSecure
-          ? connectSecure({
-              host,
-              port,
-              rejectUnauthorized: false,
-            })
-          : connectInsecure({
-              host,
-              port,
-            });
+        const request = (isSecure ? https : http).request(
+          {
+            host,
+            port,
+            method: "HEAD", // Use HEAD method for faster response without full content
+            timeout: 1000, // Timeout in milliseconds
+            rejectUnauthorized: false, // Ignore SSL certificate errors
+          },
+          (response) => {
+            // If the response is received, the port is open
+            console.log(`Port ${port} is open on ${host}`);
+            this.results[host].push({ port, isSecure });
+            resolve(true);
+          }
+        );
 
-        socket.setTimeout(1000);
-
-        socket.on(isSecure ? "secureConnect" : "connect", () => {
-          this.results[host].push({ port, isSecure });
-
-          socket.destroy();
-          resolve(true);
-        });
-
-        socket.on("timeout", () => {
-          socket.destroy();
+        request.on("error", (error) => {
+          // If an error occurs or the connection times out, the port is closed
+          console.error(`Port ${port} is closed on ${host}: ${error.message}`);
           resolve(false);
         });
 
-        socket.on("error", (msg) => {
-          socket.destroy();
+        request.on("timeout", () => {
+          // If the request times out, consider the port closed
+          console.error(
+            `Timeout occurred while testing port ${port} on ${host}`
+          );
+          request.abort();
           resolve(false);
         });
+
+        request.end();
       });
     };
 
