@@ -89,6 +89,8 @@ RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $RUN_DEPS \
     && rm -rf /var/lib/apt/lists/*
 
+# Install curl
+RUN apt-get update && apt-get install -y curl
 
 # run the app
 USER bun
