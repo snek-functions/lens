@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cp -f /.ssh/..data/* ${HOME}/.ssh/
-chmod 600 -Rv ${HOME}/.ssh/
+chmod 600 -v ${HOME}/.ssh/*
 
 cp -f /.ansible/..data/.ansible.cfg ${HOME}/
 chmod 600 -Rv ${HOME}/.ansible.cfg
