@@ -76,7 +76,9 @@ RUN set -ex \
     && pip3 install --no-cache-dir -r requirements.txt \
     && find src -mindepth 1 -maxdepth 1 -not -name internal -exec rm -rf {} + \
     && mkdir -p ${HOME}/.ssh \
+    && chown -R bun:bun ${HOME}/.ssh \
     && mkdir -p ${HOME}/.ansible \
+    && chown -R bun:bun ${HOME}/.ansible \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists
 
