@@ -8,7 +8,13 @@ LABEL maintainer="opensource@cronit.io"
 
 ARG DEFAULT_PASSPHRASE="changeme"
 
-WORKDIR /usr/src/pylon
+
+ENV PYLON_APP_ROOT=${PYLON_APP_ROOT} \
+    PYLON_BUILD_DIR=/temp/dev \
+    HOME=/var/task \
+    PASSPHRASE=$DEFAULT_PASSPHRASE
+
+WORKDIR ${PYLON_APP_ROOT}
 
 # install dependencies into temp directory
 # this will cache them and speed up future builds
@@ -47,15 +53,15 @@ RUN bun run pylon build
 FROM base AS release
 RUN apt-get update -y && apt-get install -y openssl
 COPY --from=install /temp/prod/node_modules node_modules
-COPY --from=prerelease /usr/src/pylon/.pylon .pylon
-COPY --from=prerelease /usr/src/pylon/package.json .
-COPY --from=prerelease /usr/src/pylon/entrypoint.sh .
-COPY --from=prerelease /usr/src/pylon/requirements.txt .
-COPY --from=prerelease /usr/src/pylon/src/internal src/internal
+COPY --from=prerelease ${PYLON_APP_ROOT}/app/.pylon .pylon
+COPY --from=prerelease ${PYLON_APP_ROOT}/app/package.json .
+COPY --from=prerelease ${PYLON_APP_ROOT}/app/entrypoint.sh .
+COPY --from=prerelease ${PYLON_APP_ROOT}/app/requirements.txt .
+COPY --from=prerelease ${PYLON_APP_ROOT}/app/src/internal src/internal
 
-# Grant bun user permission to write /usr/src/pylon/data
-RUN mkdir -p /usr/src/pylon/data
-RUN chown -R bun:bun /usr/src/pylon/data
+# Grant bun user permission to write ${PYLON_APP_ROOT}/app/data
+RUN mkdir -p ${PYLON_APP_ROOT}/app/data
+RUN chown -R bun:bun ${PYLON_APP_ROOT}/app/data
 
 # Update, install and cleaning:
 RUN set -ex \
@@ -71,9 +77,9 @@ RUN set -ex \
     && pip3 install --no-cache-dir -r requirements.txt \
     && find src -mindepth 1 -maxdepth 1 -not -name internal -exec rm -rf {} + \
     && mkdir -p .ssh \
-    && mkdir -p ansible \
-    && touch ansible/.ansible.cfg \
-    && ln -s ansible/.ansible.cfg .ansible.cfg \
+    && mkdir -p .ansible \
+    # && touch ansible/.ansible.cfg \
+    # && ln -s ansible/.ansible.cfg .ansible.cfg \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists
 
@@ -97,4 +103,4 @@ USER bun
 EXPOSE 3000/tcp
 ENTRYPOINT [ "./entrypoint.sh" ]
 
-VOLUME [ "/usr/src/pylon" ]
+VOLUME [ "${PYLON_APP_ROOT}/app" ]
