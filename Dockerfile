@@ -8,10 +8,9 @@ LABEL maintainer="opensource@cronit.io"
 
 ARG DEFAULT_PASSPHRASE="changeme"
 
-
-ENV PYLON_APP_ROOT=${PYLON_APP_ROOT} \
+ENV PYLON_APP_ROOT=/usr/src/pylon \
     PYLON_BUILD_DIR=/temp/dev \
-    HOME=/var/task \
+    HOME=/home/bun \
     PASSPHRASE=$DEFAULT_PASSPHRASE
 
 WORKDIR ${PYLON_APP_ROOT}
@@ -27,10 +26,10 @@ RUN curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o n \
     && rm n \
     && npm install -g n
 
-RUN mkdir -p /temp/dev
-COPY package.json bun.lockb /temp/dev/
+RUN mkdir -p ${PYLON_BUILD_DIR}
+COPY package.json bun.lockb ${PYLON_BUILD_DIR}
 
-RUN cd /temp/dev && bun install --frozen-lockfile
+RUN cd ${PYLON_BUILD_DIR} && bun install --frozen-lockfile
 
 # install with --production (exclude devDependencies)
 RUN mkdir -p /temp/prod
@@ -41,7 +40,7 @@ RUN cd /temp/prod && bun install --frozen-lockfile --production
 # copy node_modules from temp directory
 # then copy all (non-ignored) project files into the image
 FROM install AS prerelease
-COPY --from=install /temp/dev/node_modules node_modules
+COPY --from=install ${PYLON_BUILD_DIR}/node_modules node_modules
 COPY . .
 
 # [optional] tests & build
@@ -53,15 +52,15 @@ RUN bun run pylon build
 FROM base AS release
 RUN apt-get update -y && apt-get install -y openssl
 COPY --from=install /temp/prod/node_modules node_modules
-COPY --from=prerelease ${PYLON_APP_ROOT}/app/.pylon .pylon
-COPY --from=prerelease ${PYLON_APP_ROOT}/app/package.json .
-COPY --from=prerelease ${PYLON_APP_ROOT}/app/entrypoint.sh .
-COPY --from=prerelease ${PYLON_APP_ROOT}/app/requirements.txt .
-COPY --from=prerelease ${PYLON_APP_ROOT}/app/src/internal src/internal
+COPY --from=prerelease ${PYLON_APP_ROOT}/.pylon .pylon
+COPY --from=prerelease ${PYLON_APP_ROOT}/package.json .
+COPY --from=prerelease ${PYLON_APP_ROOT}/entrypoint.sh .
+COPY --from=prerelease ${PYLON_APP_ROOT}/requirements.txt .
+COPY --from=prerelease ${PYLON_APP_ROOT}/src/internal src/internal
 
-# Grant bun user permission to write ${PYLON_APP_ROOT}/app/data
-RUN mkdir -p ${PYLON_APP_ROOT}/app/data
-RUN chown -R bun:bun ${PYLON_APP_ROOT}/app/data
+# Grant bun user permission to write ${PYLON_APP_ROOT}/data
+RUN mkdir -p ${PYLON_APP_ROOT}/data
+RUN chown -R bun:bun ${PYLON_APP_ROOT}/data
 
 # Update, install and cleaning:
 RUN set -ex \
@@ -76,10 +75,8 @@ RUN set -ex \
     # Copy the built functions to the lambda function
     && pip3 install --no-cache-dir -r requirements.txt \
     && find src -mindepth 1 -maxdepth 1 -not -name internal -exec rm -rf {} + \
-    && mkdir -p .ssh \
-    && mkdir -p .ansible \
-    # && touch ansible/.ansible.cfg \
-    # && ln -s ansible/.ansible.cfg .ansible.cfg \
+    && mkdir -p ${HOME}/.ssh \
+    && mkdir -p ${HOME}/.ansible \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $BUILD_DEPS \
     && rm -rf /var/lib/apt/lists
 
@@ -103,4 +100,4 @@ USER bun
 EXPOSE 3000/tcp
 ENTRYPOINT [ "./entrypoint.sh" ]
 
-VOLUME [ "${PYLON_APP_ROOT}/app" ]
+VOLUME [ "/usr/src/pylon" ]

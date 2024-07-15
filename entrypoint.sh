@@ -1,11 +1,11 @@
 #!/bin/sh
 
-cp -f /.ssh/..data/* ${PYLON_APP_ROOT}/.ssh/
-chmod 600 -Rv ${PYLON_APP_ROOT}/.ssh/
+cp -f /.ssh/..data/* ${HOME}/.ssh/
+chmod 600 -Rv ${HOME}/.ssh/
 
-cp -f /.ssh/..data/.ansible.cfg ${PYLON_APP_ROOT}/
-chmod 600 -Rv ${PYLON_APP_ROOT}/.ansible.cfg
-cp -f /.ssh/..data/* ${PYLON_APP_ROOT}/.ansible/
-chmod 600 -Rv ${PYLON_APP_ROOT}/.ansible/
+cp -f /.ansible/..data/.ansible.cfg ${HOME}/
+chmod 600 -Rv ${HOME}/.ansible.cfg
+cp -f /.ansible/..data/* ${HOME}/.ansible/
+chmod 600 -Rv ${HOME}/.ansible/
 
 bun pylon-server --https --key /private/tls.key --cert /private/tls.crt --passphrase $PASSPHRASE
