@@ -1,9 +1,10 @@
-import { Context, PylonAPI, auth, defineService } from "@getcronit/pylon";
+import { app, Context, PylonConfig, useAuth } from "@getcronit/pylon";
 import { Handler } from "hono";
 import { createBunWebSocket } from "hono/bun";
 import { WebSocket } from "ws";
 
 import dotenv from "dotenv";
+import { existsSync, readFileSync } from "fs";
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
@@ -136,14 +137,16 @@ function basicProxy(proxy_url = ""): Handler {
   };
 }
 
-import { Lens, LensService } from "./services/lens.service";
+import { Lens, type LensService } from "./services/lens.service";
 import { PasswordUpdater } from "./services/password-updater.service";
 
 dotenv.config();
 
 export const lensService = new Lens();
 
-export default defineService({
+// Pylon v3 replaces `defineService({ Query, Mutation })` with a plain exported
+// `graphql` object that the build statically discovers.
+export const graphql = {
   Query: {
     allService: lensService.getServices,
   },
@@ -151,22 +154,47 @@ export default defineService({
     updateInternalPassword: PasswordUpdater.updatePassword,
     serviceUpdate: lensService.updateService,
   },
-});
+};
 
-export const configureApp: PylonAPI["configureApp"] = async (app) => {
-  app.use(auth.initialize());
+// Built-in OIDC (Zitadel) auth, wired as a plugin in v3 (was
+// `app.use(auth.initialize())` in v1). This is NOT basic auth. The guarded
+// resolvers keep their `@requireAuth(...)` decorators. Auth stays inactive
+// during the hermetic `pylon build` (no AUTH_ISSUER in the build env).
+const authIssuer = process.env.AUTH_ISSUER ?? process.env.ZITADEL_ISSUER;
 
-  let services = new Map<string, LensService>();
+export const config: PylonConfig = {
+  plugins: authIssuer ? [useAuth({ issuer: authIssuer })] : [],
+};
 
-  await lensService.start((latestServices) => {
+const getSubdomains = (url: string): string[] => {
+  const hostnameParts = new URL(url).hostname.split(".");
+  // If root domain, treat the whole thing as a single part
+  return hostnameParts.length > 1
+    ? hostnameParts.slice(0, hostnameParts.length - 1).reverse()
+    : [];
+};
+
+const { upgradeWebSocket, websocket } = createBunWebSocket();
+
+// v1 wired app middleware inside the removed `configureApp` hook; in v3 we
+// register directly on the exported Hono `app` at module scope. Discovery runs
+// fire-and-forget (no top-level await) so the server starts serving
+// immediately; the proxy middleware falls through while the map is still empty.
+let services = new Map<string, LensService>();
+
+void lensService
+  .start((latestServices) => {
     services = new Map<string, LensService>(
       latestServices.map((service) => [service.id, service])
     );
 
     console.log("Services", services);
+  })
+  .catch((err) => {
+    console.error("Lens discovery failed to start", err);
   });
 
-  app.use(
+app.use(
     upgradeWebSocket(async (c) => {
       // Skip if not a WebSocket upgrade request
       if (!c.req.header("upgrade") || c.req.header("upgrade") !== "websocket") {
@@ -271,18 +299,25 @@ export const configureApp: PylonAPI["configureApp"] = async (app) => {
       return proxy(c, next);
     }
   });
-};
 
-const getSubdomains = (url: string): string[] => {
-  const hostnameParts = new URL(url).hostname.split(".");
-  // If root domain, treat the whole thing as a single part
-  return hostnameParts.length > 1
-    ? hostnameParts.slice(0, hostnameParts.length - 1).reverse()
-    : [];
-};
+// Bun serves the default export directly (Pylon v3 has no `serve` export and no
+// `configureWebsocket` hook). Passing `websocket` here wires Bun's native
+// WebSocket handler; TLS is served in-process when the cert files are present
+// (this replaces the old `bun pylon-server --https --key --cert --passphrase`).
+const tlsKeyPath = process.env.LENS_TLS_KEY ?? "/private/tls.key";
+const tlsCertPath = process.env.LENS_TLS_CERT ?? "/private/tls.crt";
+const tls =
+  existsSync(tlsKeyPath) && existsSync(tlsCertPath)
+    ? {
+        key: readFileSync(tlsKeyPath, "utf8"),
+        cert: readFileSync(tlsCertPath, "utf8"),
+        passphrase: process.env.PASSPHRASE,
+      }
+    : undefined;
 
-const { upgradeWebSocket, websocket } = createBunWebSocket();
-
-export const configureWebsocket: PylonAPI["configureWebsocket"] = () => {
-  return websocket;
+export default {
+  port: process.env.PORT ? Number(process.env.PORT) : 3000,
+  fetch: app.fetch,
+  websocket,
+  ...(tls ? { tls } : {}),
 };

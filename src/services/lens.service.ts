@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 import {
-  LensServiceMeta,
+  type LensServiceMeta,
   LensRepository,
 } from "../repositories/lens.repository";
 import { NetworkScanner } from "./network-scanner.service";

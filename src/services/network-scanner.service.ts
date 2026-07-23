@@ -1,4 +1,3 @@
-import { logger } from "@getcronit/pylon";
 import ip from "ip";
 
 import * as http from "http";
@@ -19,7 +18,7 @@ export class NetworkScanner {
     this.portList = portList;
     this.results = {};
 
-    logger.info(
+    console.info(
       `Initializing network scanner with networks [${networks}] and ports [${portList}]`
     );
   }
