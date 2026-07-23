@@ -46,7 +46,9 @@ COPY . .
 # [optional] tests & build
 ENV NODE_ENV=production
 # RUN bun test
-RUN bun run pylon build
+# pylon-dev's bin ships without a shebang, so bun's symlink bin can't exec it;
+# invoke the entry file directly (see the `build` script).
+RUN bun run build
 
 # copy production dependencies and source code into final image
 FROM base AS release

@@ -8,4 +8,7 @@ chmod 600 -Rv ${HOME}/.ansible.cfg
 
 cp -f /.ansible/..data/* ${HOME}/.ansible/
 
-bun pylon-server --https --key /private/tls.key --cert /private/tls.crt --passphrase $PASSPHRASE
+# Pylon v3: the standalone `pylon-server` binary is gone. Bun serves the built
+# artifact's default export directly; TLS + WebSocket are configured in
+# src/index.ts (reads /private/tls.{key,crt} and $PASSPHRASE when present).
+exec bun run .pylon/index.js
