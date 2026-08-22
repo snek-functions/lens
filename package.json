@@ -53,6 +53,6 @@
   },
   "scripts": {
     "dev": "bun ./node_modules/@getcronit/pylon-dev/dist/index.js dev",
-    "build": "bun ./node_modules/@getcronit/pylon-dev/dist/index.js build"
+    "build": "AUTH_ISSUER=${AUTH_ISSUER:-https://build.invalid} bun ./node_modules/@getcronit/pylon-dev/dist/index.js build"
   }
 }

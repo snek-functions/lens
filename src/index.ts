@@ -158,12 +158,28 @@ export const graphql = {
 
 // Built-in OIDC (Zitadel) auth, wired as a plugin in v3 (was
 // `app.use(auth.initialize())` in v1). This is NOT basic auth. The guarded
-// resolvers keep their `@requireAuth(...)` decorators. Auth stays inactive
-// during the hermetic `pylon build` (no AUTH_ISSUER in the build env).
+// resolvers keep their `@requireAuth(...)` decorators.
+//
+// The issuer is mandatory. This used to fall back to an empty plugin list so
+// that `pylon build` would work without the variable, which was a trap:
+// Pylon fills the auth context only from this plugin, and authMiddleware
+// throws "Authentication required" whenever that context is empty. A
+// deployment missing the variable therefore rejected every authenticated
+// caller while looking like a token problem. The build passes the value
+// explicitly now (see the build script).
 const authIssuer = process.env.AUTH_ISSUER ?? process.env.ZITADEL_ISSUER;
 
+if (!authIssuer) {
+  throw new Error(
+    "AUTH_ISSUER is not set. Every guarded resolver authenticates against " +
+      "the Zitadel named by it, so there is no mode in which this service " +
+      "can run without one. Set AUTH_ISSUER (or ZITADEL_ISSUER) to that " +
+      "Zitadel, for example https://accounts.example.com.",
+  );
+}
+
 export const config: PylonConfig = {
-  plugins: authIssuer ? [useAuth({ issuer: authIssuer })] : [],
+  plugins: [useAuth({ issuer: authIssuer })],
 };
 
 const getSubdomains = (url: string): string[] => {
