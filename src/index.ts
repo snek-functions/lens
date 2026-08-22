@@ -180,6 +180,17 @@ if (!authIssuer) {
   );
 }
 
+// Pylon reads the API application key lazily, at the first request, and the
+// failure it reports then names neither the variable nor the request. Checked
+// here so a deployment missing it dies at startup with the variable named.
+if (!process.env.AUTH_KEY) {
+  throw new Error(
+    "AUTH_KEY is not set. It is the JSON key of an API application in the " +
+      "Zitadel named by AUTH_ISSUER; Pylon authenticates its token " +
+      "introspection with it. A key.json file is not looked for by this check.",
+  );
+}
+
 export const config: PylonConfig = {
   plugins: [useAuth({ issuer: authIssuer })],
 };
