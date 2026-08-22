@@ -174,7 +174,9 @@ if (!authIssuer) {
     "AUTH_ISSUER is not set. Every guarded resolver authenticates against " +
       "the Zitadel named by it, so there is no mode in which this service " +
       "can run without one. Set AUTH_ISSUER (or ZITADEL_ISSUER) to that " +
-      "Zitadel, for example https://accounts.example.com.",
+      "Zitadel, for example https://accounts.example.com, and AUTH_KEY to " +
+      "the JSON key of an API application there; Pylon introspects tokens " +
+      "with it and fails the first request without it.",
   );
 }
 

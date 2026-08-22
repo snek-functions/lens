@@ -1,4 +1,5 @@
-import { ServiceError, getContext, requireAuth } from "@getcronit/pylon";
+import { ServiceError, getContext } from "@getcronit/pylon";
+import { requireAuth } from "../auth";
 import { Coder } from "../controller/coder";
 import { Samba } from "../controller/samba";
 

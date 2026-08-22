@@ -5,7 +5,7 @@ import {
   LensRepository,
 } from "../repositories/lens.repository";
 import { NetworkScanner } from "./network-scanner.service";
-import { requireAuth } from "@getcronit/pylon";
+import { requireAuth } from "../auth";
 
 // Repository for Lens services (persisted on disk)
 export type LensService = {
