@@ -6,7 +6,7 @@ if [ "$#" -ne 3 ]; then
     exit 1
 fi
 
-TOKEN_VALUE=="$1"
+TOKEN_VALUE="$1"
 USERID="$2"
 VAULT_KEY="$3"
 

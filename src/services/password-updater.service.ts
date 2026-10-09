@@ -14,8 +14,6 @@ export class PasswordUpdater {
     const firstName = auth.user?.given_name;
     const lastName = auth.user?.family_name;
 
-    console.log(username, email, firstName, lastName, password);
-
     if (!username) {
       throw new ServiceError(`No username provided`, {
         code: "NO_USERNAME_PROVIDED_FOR_UPDATE_INTERNAL_PASSWORD",

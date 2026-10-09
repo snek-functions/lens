@@ -60,7 +60,6 @@ export class Coder {
     const vaultUrl = `${process.env.VAULT_HOST}/v1/users/${userId}/samba`;
     console.log("The vault Url:" + vaultUrl);
     const vaultKey = process.env.VAULT_UPDATE_KEY ?? "API_KEY";
-    console.log("The vault key:" + vaultKey);
 
     // Properly format the token value
     const token = Buffer.from(
