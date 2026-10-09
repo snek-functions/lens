@@ -38,6 +38,15 @@ export function apiHostAuth(args: { issuer: string }): Plugin {
   return {
     middleware: async (ctx, next) => {
       if (!serviceForUrl(ctx.req.url)) {
+        // useAuth reads its key through Pylon's getContext(), which replaces
+        // ctx.env with the process environment. It does so on the first
+        // request after a start, and again after a failed discovery, since
+        // only a successful one is cached. hono's upgradeWebSocket, the next
+        // lens middleware, looks up the Bun server in ctx.env and threw
+        // "server.upgrade is not a function" for such a request, which then
+        // answered 500. The request keeps the env it came with.
+        const env = ctx.env;
+
         try {
           await introspect(ctx, async () => {});
         } catch (error) {
@@ -46,6 +55,8 @@ export function apiHostAuth(args: { issuer: string }): Plugin {
           }
 
           console.info(`Continuing anonymously after ${error.message}`);
+        } finally {
+          ctx.env = env;
         }
       }
 
