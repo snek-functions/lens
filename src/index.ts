@@ -1,4 +1,4 @@
-import { app, Context, PylonConfig, useAuth } from "@getcronit/pylon";
+import { app, Context, PylonConfig } from "@getcronit/pylon";
 import { Handler } from "hono";
 import { createBunWebSocket } from "hono/bun";
 import { WebSocket } from "ws";
@@ -137,7 +137,9 @@ function basicProxy(proxy_url = ""): Handler {
   };
 }
 
-import { Lens, type LensService } from "./services/lens.service";
+import { apiHostAuth } from "./auth";
+import { serviceForUrl, setServices } from "./service-registry";
+import { Lens } from "./services/lens.service";
 import { PasswordUpdater } from "./services/password-updater.service";
 
 dotenv.config();
@@ -156,8 +158,10 @@ export const graphql = {
   },
 };
 
-// Built-in OIDC (Zitadel) auth, wired as a plugin in v3 (was
-// `app.use(auth.initialize())` in v1). This is NOT basic auth. The guarded
+// Built-in OIDC (Zitadel) auth through Pylon's useAuth, wired as a plugin in
+// v3 (was `app.use(auth.initialize())` in v1). This is NOT basic auth. The
+// plugin is apiHostAuth, which runs useAuth only for the API host and treats
+// a rejected token as an anonymous request (see src/auth.ts). The guarded
 // resolvers keep their `@requireAuth(...)` decorators.
 //
 // The issuer is mandatory. This used to fall back to an empty plugin list so
@@ -192,15 +196,7 @@ if (!process.env.AUTH_KEY) {
 }
 
 export const config: PylonConfig = {
-  plugins: [useAuth({ issuer: authIssuer })],
-};
-
-const getSubdomains = (url: string): string[] => {
-  const hostnameParts = new URL(url).hostname.split(".");
-  // If root domain, treat the whole thing as a single part
-  return hostnameParts.length > 1
-    ? hostnameParts.slice(0, hostnameParts.length - 1).reverse()
-    : [];
+  plugins: [apiHostAuth({ issuer: authIssuer })],
 };
 
 const { upgradeWebSocket, websocket } = createBunWebSocket();
@@ -209,15 +205,12 @@ const { upgradeWebSocket, websocket } = createBunWebSocket();
 // register directly on the exported Hono `app` at module scope. Discovery runs
 // fire-and-forget (no top-level await) so the server starts serving
 // immediately; the proxy middleware falls through while the map is still empty.
-let services = new Map<string, LensService>();
-
+// The map lives in src/service-registry.ts, where the auth plugin reads it too.
 void lensService
   .start((latestServices) => {
-    services = new Map<string, LensService>(
-      latestServices.map((service) => [service.id, service])
-    );
+    setServices(latestServices);
 
-    console.log("Services", services);
+    console.log("Services", latestServices);
   })
   .catch((err) => {
     console.error("Lens discovery failed to start", err);
@@ -230,10 +223,7 @@ app.use(
         return {};
       }
 
-      const subdomains = getSubdomains(c.req.url);
-      const serviceId = subdomains[subdomains.length - 1] || "";
-
-      const service = services.get(serviceId);
+      const service = serviceForUrl(c.req.url);
 
       if (service === undefined) {
         throw new Error("Service not found");
@@ -302,15 +292,7 @@ app.use(
   );
 
   app.use(async (c, next) => {
-    const subdomains = getSubdomains(c.req.url);
-
-    const serviceId = subdomains[subdomains.length - 1];
-
-    if (serviceId === undefined) {
-      return next();
-    }
-
-    const service = services.get(serviceId);
+    const service = serviceForUrl(c.req.url);
 
     if (service === undefined) {
       return next();

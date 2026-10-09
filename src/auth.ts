@@ -1,4 +1,58 @@
-import { createDecorator, getContext, ServiceError } from "@getcronit/pylon";
+import {
+  createDecorator,
+  getContext,
+  type Plugin,
+  ServiceError,
+  useAuth,
+} from "@getcronit/pylon";
+import { HTTPException } from "hono/http-exception";
+
+import { serviceForUrl } from "./service-registry";
+
+/**
+ * Pylon's useAuth, limited to the lens API host.
+ *
+ * Pylon runs plugin middleware for every request before any lens middleware,
+ * proxied hosts and WebSocket upgrades included. Unmodified, useAuth answers
+ * a non-Bearer Authorization header (the Cockpit and Keel logins through the
+ * proxy) with 401 "Invalid token", a foreign Bearer token (the Portainer API)
+ * with 401 "Token is not active", and an expired photonq.org session with a
+ * 401 that carries no CORS headers, which the browser reports as "Failed to
+ * fetch".
+ *
+ * This plugin leaves a request alone when the first label of its host name
+ * is a discovered service id, because such a request belongs to the proxied
+ * service and its own login. On every other host it runs useAuth's
+ * middleware, and a 401 from it lets the request go on anonymously. Public
+ * resolvers such as allService then answer, and guarded resolvers fail inside
+ * GraphQL with CORS headers. useAuth's /auth/login, /auth/logout and
+ * /auth/callback routes are not registered, since lens signs nobody in.
+ */
+export function apiHostAuth(args: { issuer: string }): Plugin {
+  const { middleware: introspect } = useAuth({ issuer: args.issuer });
+
+  if (!introspect) {
+    throw new Error("Pylon's useAuth no longer provides a middleware");
+  }
+
+  return {
+    middleware: async (ctx, next) => {
+      if (!serviceForUrl(ctx.req.url)) {
+        try {
+          await introspect(ctx, async () => {});
+        } catch (error) {
+          if (!(error instanceof HTTPException) || error.status !== 401) {
+            throw error;
+          }
+
+          console.info(`Continuing anonymously after ${error.message}`);
+        }
+      }
+
+      return next();
+    },
+  };
+}
 
 /**
  * Zitadel spells the project roles claim in several ways: the generic
