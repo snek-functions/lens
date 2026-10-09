@@ -1,6 +1,9 @@
 # use the official Bun image
 # see all versions at https://hub.docker.com/r/oven/bun/tags
-FROM oven/bun:1 as base
+# Pinned to the release and digest the Pylon build last passed with (Debian
+# trixie, publish run 32558800427), so a new Bun release cannot change the
+# image behind our back.
+FROM oven/bun:1.4.0@sha256:5ff609364c049b54eb0ff560ec96319729a972078ef2c755d758f0c6ef89c2d6 AS base
 
 LABEL description="This container serves as an entry point for our future Pylon projects."
 LABEL org.opencontainers.image.source="https://github.com/cronitio/pylon-template"
@@ -8,10 +11,15 @@ LABEL maintainer="opensource@cronit.io"
 
 ARG DEFAULT_PASSPHRASE="changeme"
 
+# Telemetry stays off in every stage. The Pylon CLI creates its PostHog
+# client on import and switches it off only when PYLON_DISABLE_TELEMETRY is
+# exactly "true". Bun reads DO_NOT_TRACK for its crash reports.
 ENV PYLON_APP_ROOT=/usr/src/pylon \
     PYLON_BUILD_DIR=/temp/dev \
     HOME=/home/bun \
-    PASSPHRASE=$DEFAULT_PASSPHRASE
+    PASSPHRASE=$DEFAULT_PASSPHRASE \
+    PYLON_DISABLE_TELEMETRY=true \
+    DO_NOT_TRACK=1
 
 WORKDIR ${PYLON_APP_ROOT}
 
@@ -75,7 +83,12 @@ RUN set -ex \
     && apt-get update && apt-get install -y --no-install-recommends $BUILD_DEPS \
     #&& ln -s /usr/local/bin/node /var/lang/bin/node \
     # Copy the built functions to the lambda function
-    && pip3 install --no-cache-dir -r requirements.txt \
+    # Debian trixie marks its Python as externally managed (PEP 668), hence
+    # --break-system-packages in this single purpose image. --ignore-installed
+    # puts every dependency of ansible under /usr/local. Without it pip counts
+    # the python3-packaging that apt installs with the build dependencies,
+    # the purge below removes it again, and ansible's version test fails.
+    && pip3 install --break-system-packages --ignore-installed --no-cache-dir -r requirements.txt \
     && find src -mindepth 1 -maxdepth 1 -not -name internal -exec rm -rf {} + \
     && mkdir -p ${HOME}/.ssh \
     && chown -R bun:bun ${HOME}/.ssh \
