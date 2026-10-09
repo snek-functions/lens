@@ -71,6 +71,18 @@ export class NetworkScanner {
   private async checkPort(host: string, port: number): Promise<void> {
     const connect = (isSecure: boolean) => {
       return new Promise<boolean>((resolve) => {
+        // Each attempt settles exactly once: with the response, the first
+        // error, or the timeout, whichever comes first.
+        let settled = false;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+
+        const settle = (open: boolean) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(open);
+        };
+
         const request = (isSecure ? https : http).request(
           {
             host,
@@ -80,27 +92,40 @@ export class NetworkScanner {
             rejectUnauthorized: false, // Ignore SSL certificate errors
           },
           (response) => {
+            if (settled) return;
             // If the response is received, the port is open
             console.log(`Port ${port} is open on ${host}`);
             this.results[host].push({ port, isSecure });
-            resolve(true);
+            settle(true);
           }
         );
 
-        request.on("error", (error) => {
-          // If an error occurs or the connection times out, the port is closed
-          console.error(`Port ${port} is closed on ${host}: ${error.message}`);
-          resolve(false);
-        });
-
-        request.on("timeout", () => {
+        const giveUp = () => {
+          if (settled) return;
           // If the request times out, consider the port closed
           console.error(
             `Timeout occurred while testing port ${port} on ${host}`
           );
-          request.abort();
-          resolve(false);
+          settle(false);
+          request.destroy();
+        };
+
+        // The `timeout` option above no longer fires while the connection is
+        // being opened (Bun 1.4.0). A host that drops the SYN, such as a
+        // service IP on a port it does not serve, then held the attempt until
+        // the kernel gave up after about two minutes, and the first service
+        // list took more than four minutes instead of two seconds. The timer
+        // keeps the one second limit whatever the runtime does.
+        timer = setTimeout(giveUp, 1000);
+
+        request.on("error", (error) => {
+          if (settled) return;
+          // If an error occurs or the connection times out, the port is closed
+          console.error(`Port ${port} is closed on ${host}: ${error.message}`);
+          settle(false);
         });
+
+        request.on("timeout", giveUp);
 
         request.end();
       });
