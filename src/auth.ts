@@ -66,48 +66,56 @@ export function apiHostAuth(args: { issuer: string }): Plugin {
 }
 
 /**
- * Zitadel spells the project roles claim in several ways: the generic
- * `urn:zitadel:iam:org:project:roles`, its plural, and the project scoped
- * `urn:zitadel:iam:org:project:<projectId>:roles`. Which of them arrive
- * depends on the role assertion settings, so all of them count.
+ * The one roles claim lens trusts, the one of the project named by
+ * AUTH_PROJECT_ID (PHOTONQ 268418173034829430 on accounts.photonq.org).
+ * Zitadel fills `urn:zitadel:iam:org:project:<projectId>:roles` only from the
+ * user's grants on that project, which only the project's owner can give, and
+ * actions cannot set any claim under `urn:zitadel:iam`.
  *
- * Pylon's own role check reads only `urn:zitadel:iam:org:projects:roles`
- * from the introspection, a spelling Zitadel never emits. Its
- * `auth.user.roles` is therefore always empty and its check answers 403 to
- * every lens:admin holder.
+ * No other roles claim counts. The generic `urn:zitadel:iam:org:project:roles`
+ * holds the roles of whatever project the token's client belongs to, and the
+ * claim of another project id holds the roles of that project. Organization
+ * registration on accounts.photonq.org is open, so a stranger can own a
+ * project with a role keyed `lens:admin`, hold that role, ask for this
+ * project in the token audience and present the role in either claim. A role
+ * key means something only together with the project that defines it.
+ *
+ * Pylon's own role check reads `urn:zitadel:iam:org:projects:roles` from the
+ * introspection, a spelling Zitadel never emits. Its `auth.user.roles` is
+ * therefore always empty and is not read here.
  */
-const ZITADEL_ROLES_CLAIM_RE = /^urn:zitadel:iam:org:projects?:(\d+:)?roles$/;
-
-/**
- * The role keys in a bag of claims. Zitadel shapes each roles claim as
- * `{ "<roleKey>": { "<orgId>": "<orgDomain>" } }`, so the role names are the
- * keys of the claim object. Anything else under a matching name is ignored.
- */
-export function rolesFromClaims(claims: Record<string, unknown>): string[] {
-  const roles = new Set<string>();
-
-  for (const [name, claim] of Object.entries(claims)) {
-    if (!ZITADEL_ROLES_CLAIM_RE.test(name)) continue;
-
-    if (claim && typeof claim === "object" && !Array.isArray(claim)) {
-      for (const role of Object.keys(claim)) roles.add(role);
-    }
-  }
-
-  return [...roles];
+export function projectRolesClaim(projectId: string): string {
+  return `urn:zitadel:iam:org:project:${projectId}:roles`;
 }
 
 /**
- * A required role is held when the user carries it as is or prefixed with
- * the project id (`<AUTH_PROJECT_ID>:lens:admin`), the two spellings Pylon
- * accepted.
+ * The role keys the user holds on the given project. Zitadel shapes a roles
+ * claim as `{ "<roleKey>": { "<orgId>": "<orgDomain>" } }`, so the role names
+ * are the keys of the claim object. Every other claim is ignored.
  */
-function holdsRole(roles: string[], required: string): boolean {
-  const projectId = process.env.AUTH_PROJECT_ID;
+export function rolesFromClaims(
+  claims: Record<string, unknown>,
+  projectId: string,
+): string[] {
+  const claim = claims[projectRolesClaim(projectId)];
 
+  if (!claim || typeof claim !== "object" || Array.isArray(claim)) return [];
+
+  return Object.keys(claim);
+}
+
+/**
+ * A required role is held when the project's claim carries it as is or
+ * prefixed with the project id (`<projectId>:lens:admin`), the two spellings
+ * Pylon accepted. Both are keys of that one claim.
+ */
+function holdsRole(
+  roles: string[],
+  required: string,
+  projectId: string,
+): boolean {
   return (
-    roles.includes(required) ||
-    (!!projectId && roles.includes(`${projectId}:${required}`))
+    roles.includes(required) || roles.includes(`${projectId}:${required}`)
   );
 }
 
@@ -121,8 +129,9 @@ function holdsRole(roles: string[], required: string): boolean {
  * write its own state, that is anonymous access. A missing token has to be a
  * 401 before any resolver runs.
  *
- * Roles, when asked for, are read from the user's Zitadel claims. Holding any
- * one of the listed roles is enough, as with Pylon's check.
+ * Roles, when asked for, are read from the roles claim of the AUTH_PROJECT_ID
+ * project alone (see projectRolesClaim). Holding any one of the listed roles
+ * is enough, as with Pylon's check.
  */
 export function requireAuth(checks?: { roles?: string[] }) {
   return createDecorator(async () => {
@@ -141,9 +150,12 @@ export function requireAuth(checks?: { roles?: string[] }) {
     const required = checks?.roles ?? [];
 
     if (required.length) {
-      const roles = rolesFromClaims(auth.user);
+      // src/index.ts refuses to start without AUTH_PROJECT_ID. Should it be
+      // missing here all the same, no role counts.
+      const projectId = process.env.AUTH_PROJECT_ID ?? "";
+      const roles = projectId ? rolesFromClaims(auth.user, projectId) : [];
 
-      if (!required.some((role) => holdsRole(roles, role))) {
+      if (!required.some((role) => holdsRole(roles, role, projectId))) {
         throw new ServiceError("Forbidden", {
           statusCode: 403,
           code: "AUTHORIZATION_REQUIRED",

@@ -195,6 +195,20 @@ if (!process.env.AUTH_KEY) {
   );
 }
 
+// Roles count only from the roles claim of this one project (see
+// src/auth.ts). Without its id every role check would fail closed, which
+// looks like a missing grant rather than a broken deployment, so a deployment
+// without it dies here with the variable named, like one without AUTH_ISSUER.
+if (!/^\d+$/.test(process.env.AUTH_PROJECT_ID ?? "")) {
+  throw new Error(
+    "AUTH_PROJECT_ID is not set or not a Zitadel project id. Lens reads " +
+      "roles such as lens:admin only from the claim " +
+      "urn:zitadel:iam:org:project:<AUTH_PROJECT_ID>:roles. Set it to the " +
+      "id of the project that defines those roles in the Zitadel named by " +
+      "AUTH_ISSUER, for photonq.org PHOTONQ 268418173034829430.",
+  );
+}
+
 export const config: PylonConfig = {
   plugins: [apiHostAuth({ issuer: authIssuer })],
 };
